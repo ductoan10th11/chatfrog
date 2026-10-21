@@ -1,4 +1,7 @@
+import { useState } from 'react'
 import { FileText } from 'lucide-react'
+import { ImageViewer } from '@/components/ImageViewer'
+import { S } from '@/lib/strings'
 import type { FileRef } from '@/types/api'
 
 function formatSize(bytes: number): string {
@@ -9,23 +12,7 @@ function formatSize(bytes: number): string {
 
 /** Attachment shown inside a user message: image preview or a document chip. */
 export function AttachmentChip({ file }: { file: FileRef }) {
-  if (file.mime.startsWith('image/')) {
-    return (
-      <a
-        href={file.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block overflow-hidden rounded-xl border"
-      >
-        <img
-          src={file.url}
-          alt={file.name}
-          loading="lazy"
-          className="max-h-48 w-auto object-cover"
-        />
-      </a>
-    )
-  }
+  if (file.mime.startsWith('image/')) return <ImageAttachment file={file} />
   return (
     <a
       href={file.url}
@@ -36,5 +23,27 @@ export function AttachmentChip({ file }: { file: FileRef }) {
       <span className="truncate">{file.name}</span>
       <span className="shrink-0 text-xs text-muted-foreground">{formatSize(file.size)}</span>
     </a>
+  )
+}
+
+function ImageAttachment({ file }: { file: FileRef }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label={`${S.viewer.open}: ${file.name}`}
+        className="block cursor-zoom-in overflow-hidden rounded-xl border"
+      >
+        <img
+          src={file.url}
+          alt={file.name}
+          loading="lazy"
+          className="max-h-48 w-auto object-cover"
+        />
+      </button>
+      <ImageViewer file={file} open={open} onOpenChange={setOpen} />
+    </>
   )
 }

@@ -1,7 +1,15 @@
-import { isValidElement, memo, type ComponentProps, type ReactElement, type ReactNode } from 'react'
+import {
+  isValidElement,
+  memo,
+  useMemo,
+  type ComponentProps,
+  type ReactElement,
+  type ReactNode,
+} from 'react'
 import ReactMarkdown, { type Components } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { cn } from '@/lib/utils'
+import { splitBlocks } from './blocks'
 import { CodeBlock } from './CodeBlock'
 
 const REMARK_PLUGINS = [remarkGfm]
@@ -72,8 +80,10 @@ const components: Components = {
       {children}
     </ul>
   ),
-  ol: ({ children }) => (
-    <ol className="my-3 list-decimal space-y-1.5 pl-6 marker:text-muted-foreground">{children}</ol>
+  ol: ({ children, start }) => (
+    <ol start={start} className="my-3 list-decimal space-y-1.5 pl-6 marker:text-muted-foreground">
+      {children}
+    </ol>
   ),
   li: ({ children }) => (
     <li className="leading-7 [&>ol]:my-1 [&>p]:my-1 [&>ul]:my-1">{children}</li>
@@ -114,9 +124,21 @@ const components: Components = {
   ),
 }
 
+/** One top-level block; unchanged blocks skip re-parsing while the message streams. */
+const Block = memo(function Block({ markdown }: { markdown: string }) {
+  return (
+    <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={components}>
+      {markdown}
+    </ReactMarkdown>
+  )
+})
+
 /**
  * GitHub-flavoured markdown. Raw HTML is never interpreted (react-markdown escapes it;
  * no rehype-raw), and `javascript:` URLs are removed by react-markdown's default urlTransform.
+ *
+ * The text is rendered block by block (see splitBlocks), so at hundreds of tokens per second
+ * only the block being written is parsed again, not the whole message.
  */
 function MarkdownRendererImpl({
   children,
@@ -125,11 +147,12 @@ function MarkdownRendererImpl({
   children: string
   className?: string
 }): ReactElement {
+  const blocks = useMemo(() => splitBlocks(children), [children])
   return (
     <div className={cn('text-[15px] break-words', className)}>
-      <ReactMarkdown remarkPlugins={REMARK_PLUGINS} components={components}>
-        {children}
-      </ReactMarkdown>
+      {blocks.map((block, i) => (
+        <Block key={i} markdown={block} />
+      ))}
     </div>
   )
 }

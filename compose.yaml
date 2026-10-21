@@ -1,4 +1,5 @@
-# ChatFrog: chỉ 2 container. Web là file tĩnh do nginx trên host phục vụ (apps/web/dist).
+# ChatFrog: 1 container (api). DB là MongoDB Atlas (MONGO_URI trong .env).
+# Web là file tĩnh do nginx trên host phục vụ (apps/web/dist).
 # Chạy: make up   (podman compose -f compose.yaml --env-file .env up -d --build)
 
 services:
@@ -12,17 +13,11 @@ services:
     env_file: .env
     environment:
       HTTP_ADDR: ":9260"
-      MONGO_URI: "mongodb://${MONGO_INITDB_ROOT_USERNAME:?set in .env}:${MONGO_INITDB_ROOT_PASSWORD:?set in .env}@db:27017/chatfrog?authSource=admin"
       FILES_DIR: /data/files
     ports:
       - "127.0.0.1:9260:9260"
     volumes:
       - chatfrog-files:/data/files
-    networks:
-      - chatfrog-net
-    depends_on:
-      db:
-        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9260/api/healthz"]
       interval: 15s
@@ -30,30 +25,5 @@ services:
       retries: 5
       start_period: 10s
 
-  db:
-    container_name: chatfrog-db
-    image: docker.io/library/mongo:8.0
-    restart: unless-stopped
-    environment:
-      MONGO_INITDB_DATABASE: chatfrog
-      MONGO_INITDB_ROOT_USERNAME: "${MONGO_INITDB_ROOT_USERNAME:?set in .env}"
-      MONGO_INITDB_ROOT_PASSWORD: "${MONGO_INITDB_ROOT_PASSWORD:?set in .env}"
-    ports:
-      - "127.0.0.1:9261:27017"
-    volumes:
-      - chatfrog-db-data:/data/db
-    networks:
-      - chatfrog-net
-    healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
 volumes:
-  chatfrog-db-data:
   chatfrog-files:
-
-networks:
-  chatfrog-net:

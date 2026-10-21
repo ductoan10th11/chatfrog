@@ -1,5 +1,5 @@
 import type { Message } from '@/types/api'
-import { buildDisplayItems, regenerableId } from './display'
+import { aliasKey, buildDisplayItems, regenerableId } from './display'
 import type { LiveGeneration } from './store'
 
 const msg = (
@@ -56,6 +56,16 @@ describe('buildDisplayItems', () => {
     expect(items.map((i) => i.key)).toEqual(['u1', 'a1', 'u2', 'a2', 'uk', 'ak'])
     expect(items.at(-1)?.live).toBe(true)
     expect(items.at(-2)?.live).toBe(false)
+  })
+
+  it('keeps the live React keys once the messages are persisted (no remount)', () => {
+    aliasKey('u3', 'tmp-u-key')
+    aliasKey('a3', 'tmp-a-key')
+    const items = buildDisplayItems(
+      [...persisted, msg('u3', 'user'), msg('a3', 'assistant')],
+      undefined,
+    )
+    expect(items.slice(-2).map((i) => i.key)).toEqual(['tmp-u-key', 'tmp-a-key'])
   })
 
   it('hides persisted copies of the live messages (after message.created)', () => {

@@ -111,7 +111,7 @@ Thứ tự `parts` của một tin nhắn assistant thường là: `reasoning` �
 | Method | Path | Mô tả |
 |---|---|---|
 | GET | `/api/auth/google/login?redirect=/c/abc` | 302 sang Google. `redirect` chỉ nhận đường dẫn tương đối |
-| GET | `/api/auth/google/callback` | Google gọi lại → set cookie → 302 về `redirect`, hoặc `/pending` nếu user chưa được duyệt |
+| GET | `/api/auth/google/callback` | Google gọi lại → set cookie → 302 về `redirect`, hoặc `/pending` nếu user chưa được duyệt. Lỗi → 302 `/login?error=<lý do>`. Đường dẫn của `GG_CALLBACK_URL` (ví dụ `/auth/gg/callback`) cũng trỏ vào handler này |
 | POST | `/api/auth/logout` | Xoá session. `204` |
 | GET | `/api/me` | `200 User`; `401` nếu chưa đăng nhập |
 
@@ -148,7 +148,7 @@ Mỗi hội thoại chỉ có một generation chạy tại một thời điểm
 |---|---|---|---|
 | POST | `/api/files` | multipart: `file`, `conversation_id?` | `201 FileRef` |
 | GET | `/api/files/:id` | — | Nội dung file (chỉ chủ sở hữu). Ảnh trả `inline`, file khác trả `attachment` |
-| GET | `/api/files/:id/thumb` | — | Ảnh WebP, cạnh dài 384px (chỉ áp dụng cho ảnh) |
+| GET | `/api/files/:id/thumb` | — | Ảnh JPEG, cạnh dài 384px (chỉ áp dụng cho ảnh) |
 | DELETE | `/api/files/:id` | — | `204`; trả `409` nếu file đã được dùng trong một tin nhắn |
 
 ### Settings
@@ -215,7 +215,7 @@ Server gửi comment `: ping` mỗi 15 giây để giữ kết nối. `index` l�
 | `tool.error` | `{ index, id, error }` | LLM vẫn tiếp tục và giải thích lỗi |
 | `conversation.title` | `{ conversation_id, title }` | Có thể đến sau `message.done` |
 | `message.done` | `{ message: Message }` | Trạng thái cuối cùng của tin nhắn (dùng để đồng bộ lại) |
-| `error` | `{ code, message }` | Lỗi nghiêm trọng; stream đóng ngay sau event này |
+| `error` | `{ code, message }` | Lỗi nghiêm trọng; stream đóng ngay sau event này. `code`: `model_unavailable`, `model_error`, `empty_response`, `internal` |
 
 Ví dụ một lượt có tạo ảnh:
 

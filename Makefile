@@ -26,8 +26,8 @@ install-api:
 	cd $(API) && go mod download
 
 ##@ Phát triển
-.PHONY: dev dev-web dev-mock dev-api db-up db-down
-dev: db-up ## Chạy web + api song song
+.PHONY: dev dev-web dev-mock dev-api
+dev: ## Chạy web + api song song
 	$(MAKE) -j2 dev-web dev-api
 dev-web: ## Chạy web (Vite)
 	cd $(WEB) && npm run dev
@@ -35,13 +35,9 @@ dev-mock: ## Chạy web với MSW mock API (không cần api)
 	cd $(WEB) && VITE_MOCK=1 npm run dev
 dev-api: ## Chạy api trên host (đọc .env)
 	cd $(API) && set -a && source ../../$(ENV_FILE) && set +a && go run ./cmd/server
-db-up: ## Khởi động container db
-	$(COMPOSE) up -d db
-db-down: ## Dừng container db
-	$(COMPOSE) stop db
 
 ##@ Chất lượng
-.PHONY: fmt lint lint-web lint-api test test-web test-api check
+.PHONY: fmt lint lint-web lint-api test test-web test-api test-api-e2e check
 fmt: ## Format code
 	cd $(WEB) && npx prettier --write .
 	if [ -d $(API) ]; then cd $(API) && gofmt -w . && go mod tidy; fi
@@ -55,6 +51,8 @@ test-web:
 	cd $(WEB) && npm test -- --run
 test-api:
 	if [ -d $(API) ]; then cd $(API) && go test -race ./...; fi
+test-api-e2e: ## Test api end-to-end với Mongo + model thật (db tạm <db>_e2e, xoá sau khi chạy)
+	cd $(API) && set -a && source ../../$(ENV_FILE) && set +a && CHATFROG_E2E=1 go test -count=1 -run E2E -v -timeout 600s ./internal/httpapi
 check: lint test ## Lint + test (chạy trước khi commit)
 
 ##@ Build
@@ -67,9 +65,9 @@ build-web-mock: ## Build web kèm mock API (xem trước khi chưa có api)
 build-api: ## Build binary api → apps/api/bin/chatfrog
 	cd $(API) && CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=$(VERSION)" -o bin/chatfrog ./cmd/server
 
-##@ Container (chatfrog-api :9260, chatfrog-db :9261)
+##@ Container (chatfrog-api :9260; db là MongoDB Atlas)
 .PHONY: up down restart logs ps
-up: ## Build + khởi động api và db
+up: ## Build + khởi động api
 	$(COMPOSE) up -d --build
 down: ## Dừng và xoá container (giữ volume)
 	$(COMPOSE) down
@@ -89,13 +87,14 @@ nginx-link: ## Symlink nginx conf vào sites-enabled + reload
 nginx-reload: ## Kiểm tra cấu hình và reload nginx
 	sudo nginx -t && sudo systemctl reload nginx
 
-##@ Dữ liệu
+##@ Dữ liệu (MongoDB Atlas, qua MONGO_URI; công cụ chạy trong container mongo:8.0)
+MONGO_TOOLS := podman run --rm -i docker.io/library/mongo:8.0
 .PHONY: db-shell db-backup
-db-shell: ## Mở mongosh
-	$(COMPOSE) exec db sh -c 'mongosh -u "$$MONGO_INITDB_ROOT_USERNAME" -p "$$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin chatfrog'
+db-shell: ## Mở mongosh tới Atlas
+	set -a && source $(ENV_FILE) && set +a && podman run --rm -it docker.io/library/mongo:8.0 mongosh "$$MONGO_URI"
 db-backup: ## mongodump → BACKUP_DIR/chatfrog-<ngày>.archive.gz
 	mkdir -p $(BACKUP_DIR)
-	$(COMPOSE) exec -T db sh -c 'mongodump -u "$$MONGO_INITDB_ROOT_USERNAME" -p "$$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --db chatfrog --archive --gzip' > $(BACKUP_DIR)/chatfrog-$$(date +%F).archive.gz
+	set -a && source $(ENV_FILE) && set +a && $(MONGO_TOOLS) mongodump --uri "$$MONGO_URI" --archive --gzip > $(BACKUP_DIR)/chatfrog-$$(date +%F).archive.gz
 
 ##@ Dọn dẹp
 .PHONY: clean

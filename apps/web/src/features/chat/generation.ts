@@ -8,13 +8,14 @@ import {
   conversationsKey,
   patchConversationCache,
 } from '@/features/conversations/queries'
-import type { Conversation, Message, Page, Part, SSEEvent } from '@/types/api'
+import type { Conversation, FileRef, Message, Page, Part, SSEEvent } from '@/types/api'
+import { aliasKey } from './display'
 import { applyEvent, markInterrupted, markStopped } from './reducer'
 import { messagesKey } from './queries'
 import { useChatStore, type LiveGeneration } from './store'
 
 export type GenerationRequest =
-  | { kind: 'send'; conversationId: string; content: string; attachmentIds?: string[] }
+  | { kind: 'send'; conversationId: string; content: string; attachments?: FileRef[] }
   | { kind: 'regenerate'; conversationId: string; message: Message }
   | {
       kind: 'edit'
@@ -64,7 +65,10 @@ function endpoint(req: GenerationRequest): { path: string; body?: unknown } {
     case 'send':
       return {
         path: `/api/conversations/${req.conversationId}/messages`,
-        body: { content: req.content, attachment_ids: req.attachmentIds },
+        body: {
+          content: req.content,
+          attachment_ids: req.attachments?.length ? req.attachments.map((f) => f.id) : undefined,
+        },
       }
     case 'regenerate':
       return { path: `/api/messages/${req.message.id}/regenerate` }
@@ -90,7 +94,9 @@ function buildInitial(req: GenerationRequest, abort: AbortController): LiveGener
   }
   switch (req.kind) {
     case 'send': {
+      // Same order as the server: attachments first, then the text.
       const user = placeholder(convId, 'user', tempId('tmp-u'), [
+        ...(req.attachments ?? []).map((file) => ({ type: 'attachment' as const, file })),
         { type: 'text', text: req.content },
       ])
       return { ...base, userMessage: user, userKey: user.id }
@@ -191,11 +197,16 @@ export async function startGeneration(
         const conv = ev.data.conversation
         const wasNew = liveKey === NEW_CONVERSATION
         assistant = ev.data.assistant_message
+        const current = useChatStore.getState().live[liveKey]
+        const assistantKey = current?.assistantKey ?? assistant.id
+        // Keep React keys once the server ids replace the optimistic ones (no remount).
+        aliasKey(assistant.id, assistantKey)
+        if (req.kind !== 'regenerate' && current) aliasKey(ev.data.user_message.id, current.userKey)
         const patch: Partial<LiveGeneration> = {
           created: true,
           conversationId: conv.id,
           assistantMessage: assistant,
-          assistantKey: useChatStore.getState().live[liveKey]?.assistantKey ?? assistant.id,
+          assistantKey,
           ...(req.kind === 'regenerate' ? {} : { userMessage: ev.data.user_message }),
         }
         if (wasNew) {

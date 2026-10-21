@@ -50,7 +50,7 @@ export function NewChatPage() {
       </div>
       <Composer
         busy={busy}
-        onSend={(text) => generate.send(NEW_CONVERSATION, text)}
+        onSend={(text, attachments) => generate.send(NEW_CONVERSATION, text, attachments)}
         onStop={() => generate.stop(NEW_CONVERSATION)}
       />
     </div>

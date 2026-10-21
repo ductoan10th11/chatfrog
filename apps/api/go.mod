@@ -1,0 +1,24 @@
+module chatfrog/api
+
+go 1.27.2
+
+require (
+	github.com/coreos/go-oidc/v3 v3.21.0
+	github.com/go-chi/chi/v5 v5.5.0
+	github.com/ledongthuc/pdf v0.0.0-20261020125853-5e46805f718e
+	go.mongodb.org/mongo-driver/v2 v2.9.2
+	golang.org/x/image v0.47.0
+	golang.org/x/oauth2 v0.37.0
+)
+
+require (
+	github.com/go-jose/go-jose/v4 v4.1.4 // indirect
+	github.com/klauspost/compress v1.19.2 // indirect
+	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
+	github.com/xdg-go/scram v1.2.0 // indirect
+	github.com/xdg-go/stringprep v1.0.4 // indirect
+	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
+	golang.org/x/crypto v0.53.0 // indirect
+	golang.org/x/sync v0.24.0 // indirect
+	golang.org/x/text v0.43.0 // indirect
+)

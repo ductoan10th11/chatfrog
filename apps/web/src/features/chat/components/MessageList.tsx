@@ -37,7 +37,9 @@ export function MessageList({
   return (
     <StickToBottom
       className="relative h-full"
-      resize="smooth"
+      // While tokens stream in (hundreds per second) a spring animation trails behind the
+      // growing content; follow it instantly, keep the smooth spring for other resizes.
+      resize={busy ? 'instant' : 'smooth'}
       initial="instant"
       role="region"
       aria-label={S.chat.messages}
@@ -57,7 +59,7 @@ export function MessageList({
               live={item.live}
               queuePosition={item.live ? queuePosition : null}
               canRegenerate={item.message.id === regenerableId}
-              onRegenerate={() => onRegenerate(item.message)}
+              onRegenerate={onRegenerate}
             />
           ),
         )}

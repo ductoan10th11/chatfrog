@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useConversation } from '@/features/conversations/queries'
 import { errorMessage, isApiError } from '@/lib/api'
 import { S } from '@/lib/strings'
+import type { Message } from '@/types/api'
 import { Composer } from './components/Composer'
 import { MessageList } from './components/MessageList'
 import { buildDisplayItems, regenerableId } from './display'
@@ -36,6 +37,14 @@ function ChatView({ id }: { id: string }) {
   const persisted = useMemo(() => flattenMessages(messages.data?.pages), [messages.data])
   const items = useMemo(() => buildDisplayItems(persisted, live), [persisted, live])
   const regenId = live ? null : regenerableId(items)
+
+  const { regenerate, edit } = generate
+  const onRegenerate = useCallback((m: Message) => void regenerate(id, m), [regenerate, id])
+  const onEdit = useCallback(
+    (m: Message, content: string, attachmentIds: string[]) =>
+      void edit(id, m, content, attachmentIds),
+    [edit, id],
+  )
 
   const { hasNextPage, isFetchingNextPage, fetchNextPage } = messages
   const loadOlder = useCallback(() => {
@@ -85,17 +94,16 @@ function ChatView({ id }: { id: string }) {
             hasOlder={!!hasNextPage}
             loadingOlder={isFetchingNextPage}
             onLoadOlder={loadOlder}
-            onRegenerate={(m) => void generate.regenerate(id, m)}
-            onEdit={(m, content, attachmentIds) =>
-              void generate.edit(id, m, content, attachmentIds)
-            }
+            onRegenerate={onRegenerate}
+            onEdit={onEdit}
           />
         )}
       </div>
       <Composer
         busy={!!live}
         focusKey={id}
-        onSend={(text) => generate.send(id, text)}
+        conversationId={id}
+        onSend={(text, attachments) => generate.send(id, text, attachments)}
         onStop={() => generate.stop(id)}
       />
     </div>

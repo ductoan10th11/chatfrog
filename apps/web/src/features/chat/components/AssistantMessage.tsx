@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { AlertCircle, CircleStop } from 'lucide-react'
 import { S } from '@/lib/strings'
 import type { Message } from '@/types/api'
@@ -15,10 +16,11 @@ type Props = {
   queuePosition: number | null
   /** Show the regenerate action (last assistant message, nothing running). */
   canRegenerate: boolean
-  onRegenerate: () => void
+  onRegenerate: (message: Message) => void
 }
 
-export function AssistantMessage({
+/** Memoized: while streaming, only the live message re-renders on each frame. */
+export const AssistantMessage = memo(function AssistantMessage({
   message,
   live,
   queuePosition,
@@ -27,7 +29,6 @@ export function AssistantMessage({
 }: Props) {
   const phase = currentPhase(message)
   const last = message.parts.length - 1
-  const text = messageText(message)
   // While reasoning, the reasoning block carries its own orb, so the status line is redundant.
   const showStatus = live && (queuePosition !== null || phase !== 'reasoning')
 
@@ -74,11 +75,11 @@ export function AssistantMessage({
 
       {!live && (
         <MessageActions
-          copyText={text}
-          onRegenerate={canRegenerate ? onRegenerate : undefined}
+          copyText={messageText(message)}
+          onRegenerate={canRegenerate ? () => onRegenerate(message) : undefined}
           persistent={canRegenerate}
         />
       )}
     </article>
   )
-}
+})

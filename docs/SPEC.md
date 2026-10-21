@@ -72,7 +72,7 @@ LLM nhận tool definition sau (OpenAI function calling):
 ```
 
 Hành vi mong muốn (ghi trong system prompt):
-- LLM viết 1–2 câu tiếng Việt giải thích sẽ tạo gì, rồi gọi tool; sau khi có kết quả, có thể thêm 1 câu ngắn (gợi ý chỉnh sửa).
+- LLM viết 1 câu tiếng Việt ngắn cho biết sẽ tạo gì, rồi gọi tool; sau khi có kết quả chỉ trả lời đúng 1 câu ngắn dạng "Tôi đã tạo cho bạn bức ảnh về …".
 - Prompt gửi model ảnh được LLM **viết lại** bằng tiếng Anh. UI hiển thị prompt đã viết lại (thu gọn) dưới ảnh.
 - Mỗi ảnh (upload hoặc đã tạo) được gắn nhãn `[image id=<id>]` trong context gửi LLM, để LLM tham chiếu khi chỉnh sửa ("đổi nền bức ảnh vừa rồi thành màu xanh").
 - Có `reference_image_ids` → backend gọi `images.edit`; không có → `images.generate`. Image server hỗ trợ cả hai, kích thước tối đa 2048px (2K).
@@ -110,7 +110,7 @@ Cloudflare (TLS, proxy)
 nginx (host :80, chat.naot.me) ── limit_req, phục vụ apps/web/dist
    │ /api/*  → 127.0.0.1:9260  (proxy_buffering off cho SSE)
    ▼
-chatfrog-api (Go/Chi, container) ──► chatfrog-db (MongoDB, container, 127.0.0.1:9261)
+chatfrog-api (Go/Chi, container) ──► MongoDB Atlas (MONGO_URI, TLS)
    │                             └► /data/files (volume: upload + ảnh đã tạo)
    │  Tailscale (LAN)
    ├──► LLM server   (OpenAI-compatible /v1/chat/completions, stream, tools)
@@ -118,7 +118,8 @@ chatfrog-api (Go/Chi, container) ──► chatfrog-db (MongoDB, container, 127.
 ```
 
 - Trình duyệt không bao giờ gọi trực tiếp model server.
-- Package `provider` dùng `github.com/openai/openai-go` với `base_url` cấu hình được. Có 2 interface `LLMProvider` và `ImageProvider` để dễ thay thế và mock trong test.
+- Package `provider` là client OpenAI-compatible tự viết (net/http) với `base_url` cấu hình được, thay cho `openai-go`: gateway (Ollama) trả reasoning ở field không chuẩn (`reasoning`), llama.cpp / vLLM dùng `reasoning_content`, có server lại trả `<think>…</think>` trong `content`; parser xử lý cả ba. Thinking bật bằng `reasoning_effort` (`LLM_REASONING_EFFORT`), tắt bằng `"none"` + `chat_template_kwargs.enable_thinking=false`. Có 2 interface `LLMProvider` và `ImageProvider` để dễ thay thế và mock trong test.
+- Nếu một lượt LLM kết thúc ngay sau phần thinking mà không có nội dung hay tool call (gặp với model nhỏ khi có tools), backend gọi lại lượt đó với thinking tắt.
 - Giới hạn đồng thời bằng semaphore: `LLM_MAX_CONCURRENCY`, `IMAGE_MAX_CONCURRENCY` (mặc định 1). Request vượt giới hạn sẽ chờ trong hàng đợi; UI hiển thị "Đang chờ tới lượt…" (SSE event `queue`).
 
 ### Cấu trúc repo
@@ -126,7 +127,7 @@ chatfrog-api (Go/Chi, container) ──► chatfrog-db (MongoDB, container, 127.
 ```
 .
 ├── Makefile
-├── compose.yaml              # 2 container: api (:9260) + db (:9261)
+├── compose.yaml              # 1 container: api (:9260); db là MongoDB Atlas
 ├── .env.example
 ├── apps/
 │   ├── web/                  # Vite + React + TS → dist/ (nginx phục vụ trực tiếp)
@@ -160,7 +161,7 @@ chatfrog-api (Go/Chi, container) ──► chatfrog-db (MongoDB, container, 127.
 4. Nếu `finish_reason = tool_calls`:
    - SSE `tool.start` (kèm prompt đã viết lại) → chờ semaphore → gọi image API (timeout `IMAGE_TIMEOUT`) → lưu PNG vào storage → SSE `tool.done` (kèm file).
    - Thêm assistant message (tool_calls) và tool message (`"Đã tạo ảnh id=<id> và hiển thị cho người dùng."`) vào context, rồi quay lại bước 3.
-   - Tối đa `MAX_TOOL_ROUNDS` (mặc định 3) vòng; lỗi tool được trả lại cho LLM dưới dạng tool result để LLM báo cho người dùng.
+   - Chỉ một vòng tool: sau khi tool chạy xong, LLM được gọi lại **không có tools, tắt thinking, tối đa 160 token** để trả lời đúng 1 câu ngắn ("Tôi đã tạo cho bạn bức ảnh về …"). Lỗi tool được trả lại cho LLM dưới dạng tool result để LLM báo cho người dùng bằng 1 câu.
 5. Kết thúc: lưu message (`complete` | `stopped` | `error`), lưu usage, gửi `message.done`. Lượt đầu tiên → sinh tiêu đề → `conversation.title`.
 6. Client ngắt kết nối → `ctx` bị huỷ → dừng gọi model, lưu `stopped`.
 
@@ -188,28 +189,31 @@ File lưu ở `FILES_DIR/<yyyy>/<mm>/<file_id>` (tên file không dùng input c�
 - **Upload**: giới hạn kích thước ở cả nginx và Go; sniff magic bytes; trả file kèm `X-Content-Type-Options: nosniff`, file không phải ảnh trả với `Content-Disposition: attachment`; luôn kiểm tra quyền sở hữu.
 - **Frontend**: không render raw HTML trong markdown; link ngoài mở với `rel="noopener noreferrer"`; CSP chặt (`default-src 'self'; img-src 'self' data: blob: https://lh3.googleusercontent.com`). Script chống nháy theme nằm inline trong `index.html` → `script-src` phải có `'sha256-…'` của script đó; `border-beam` chèn thẻ `<style>` lúc chạy → `style-src 'self' 'unsafe-inline'`.
 - **Header**: HSTS, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`.
-- **Hạ tầng**: Mongo bật auth và chỉ nằm trong network của podman; model server chỉ truy cập được qua Tailscale; `.env` có quyền 600, không commit.
+- **Hạ tầng**: MongoDB Atlas dùng TLS + user riêng, Network Access chỉ cho phép IP của VPS; model server chỉ truy cập được qua Tailscale; `.env` có quyền 600, không commit.
 - Validate input tại handler: độ dài tin nhắn ≤ `MAX_MESSAGE_CHARS`, số file đính kèm ≤ 5.
 
 ## 9. Cấu hình (env)
 
 | Biến | Ví dụ / mặc định |
 |---|---|
-| `APP_ORIGIN` | `https://chat.naot.me` |
-| `HTTP_ADDR` | `:9260` |
-| `MONGO_URI` | `mongodb://chatfrog:***@db:27017/chatfrog?authSource=admin` (compose tự dựng từ `MONGO_INITDB_ROOT_*`) |
-| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | — |
+| `APP_ORIGIN` | mặc định: origin của `GG_CALLBACK_URL` (`https://chat.naot.me`) |
+| `API_PORT` / `HTTP_ADDR` | `9260` / `:9260` (`HTTP_ADDR` ưu tiên hơn) |
+| `MONGO_URI` / `MONGO_DB` | `mongodb+srv://…@<cluster>.mongodb.net/chatfrog` (Atlas) / mặc định lấy từ path của URI, nếu không có thì `chatfrog` |
+| `GG_CLIENT_ID` / `GG_CLIENT_SECRET` / `GG_CALLBACK_URL` | — / — / `https://chat.naot.me/auth/gg/callback` (cũng nhận tên `GOOGLE_*`) |
 | `ADMIN_EMAILS` / `ALLOWED_EMAILS` | danh sách email cách nhau bằng dấu phẩy |
 | `SESSION_TTL` | `720h` |
-| `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` | `http://gpu-box:8001/v1` / `none` / `qwen3.5-4b` |
+| `BASE_URL` / `API_KEY` | URL và key chung cho LLM + image server |
+| `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` | mặc định `BASE_URL` / `API_KEY` / bắt buộc |
+| `LLM_REASONING_EFFORT` | `low` (`none` = tắt thinking) |
 | `LLM_CONTEXT_TOKENS` / `LLM_MAX_OUTPUT_TOKENS` | `32768` / `4096` |
 | `LLM_VISION` / `VISION_MAX_PX` | `true` / `1024` |
 | `LLM_MAX_CONCURRENCY` | `2` |
-| `IMAGE_BASE_URL` / `IMAGE_API_KEY` / `IMAGE_MODEL` | `http://gpu-box:8002/v1` / `none` / `flux.2-klein-4b` |
+| `IMAGE_BASE_URL` / `IMAGE_API_KEY` / `IMAGE_MODEL` | mặc định `BASE_URL` / `API_KEY` / bắt buộc |
 | `IMAGE_MAX_CONCURRENCY` / `IMAGE_TIMEOUT` | `1` / `180s` |
-| `MAX_TOOL_ROUNDS` | `3` |
 | `FILES_DIR` | `/data/files` |
 | `MAX_UPLOAD_MB` / `DOC_MAX_CHARS` / `MAX_MESSAGE_CHARS` | `20` / `24000` / `16000` |
+| `STATS_TZ` | `Asia/Ho_Chi_Minh` (múi giờ chia ngày cho thống kê) |
+| `COOKIE_SECURE` | mặc định `true` khi `APP_ORIGIN` là https |
 
 ## 10. Frontend
 
@@ -266,18 +270,19 @@ Tiếng Việt, gom vào một file `src/lib/strings.ts`. Không dùng thư vi�
 ## 11. Hạ tầng và triển khai
 
 - **VPS** chính là máy chứa repo này: build và deploy tại chỗ, không cần ssh/rsync. Model chạy ở máy khác trong tailnet.
-- **Chỉ 2 container** (podman, `compose.yaml` ở gốc repo, chạy bằng `podman compose`):
+- **Chỉ 1 container** (podman, `compose.yaml` ở gốc repo, chạy bằng `podman compose`):
 
   | Container | Cổng (chỉ bind 127.0.0.1) | Volume |
   |---|---|---|
   | `chatfrog-api` | `9260` | `chatfrog-files` → `/data/files` |
-  | `chatfrog-db` (mongo:8.0) | `9261` → 27017 | `chatfrog-db-data` |
+
+- **DB**: MongoDB Atlas qua `MONGO_URI`. Network Access của Atlas phải cho phép IP của VPS. `make db-shell` / `make db-backup` chạy `mongosh` / `mongodump` trong container `mongo:8.0` dùng chính `MONGO_URI`.
 
 - **Web** không chạy container: `make build-web` ra `apps/web/dist`, nginx trên host phục vụ trực tiếp từ thư mục đó.
-- **nginx** (`nginx/chat.naot.me.conf`, symlink vào `/etc/nginx/sites-enabled/`): nghe cổng 80, TLS do Cloudflare proxy lo, lấy IP thật từ `CF-Connecting-IP`; `/api/` → `127.0.0.1:9260`, không buffer (SSE), timeout 600s; `/api/files` cho body 25 MB; `/api/auth/` có `limit_req`; `/assets/` cache 1 năm; `index.html` và service worker `no-cache`; SPA fallback.
+- **nginx** (`nginx/chat.naot.me.conf`, symlink vào `/etc/nginx/sites-enabled/`): nghe cổng 80, TLS do Cloudflare proxy lo, lấy IP thật từ `CF-Connecting-IP`; `/api/` và `/auth/gg/callback` (OAuth callback) → `127.0.0.1:9260`, không buffer (SSE), timeout 600s; `/api/files` cho body 25 MB; `/api/auth/` có `limit_req`; `/assets/` cache 1 năm; `index.html` và service worker `no-cache`; SPA fallback.
 - **Tailscale**: container gọi model server qua MagicDNS/IP tailnet. Mạng rootless của podman (pasta) đi ra ngoài qua host nên truy cập được tailnet; cần kiểm tra lại khi triển khai.
 - **Xem trước khi chưa có api**: `make build-web-mock` build kèm mock API (MSW) để nginx phục vụ bản demo. Khi có api, chạy lại `make build-web` để thay.
-- **Backup**: `make db-backup` → `mongodump` nén theo ngày.
+- **Backup**: `make db-backup` → `mongodump` (từ Atlas) nén theo ngày.
 - **Git**: remote GitHub.
 
 ## 12. Lộ trình
@@ -293,12 +298,12 @@ Tiếng Việt, gom vào một file `src/lib/strings.ts`. Không dùng thư vi�
 6. PWA, kiểm tra trên mobile, hoàn thiện animation
 
 **Giai đoạn 2, Backend**
-1. Scaffold Go/Chi, config, logging (slog), Mongo, compose
-2. Google OAuth + session + middleware phân quyền
-3. CRUD conversation/message, files (upload, sniff, extract)
-4. Provider LLM + agent loop + SSE; provider image + tool
-5. Admin, thống kê, health
-6. Bỏ mock ở frontend, test end-to-end với model thật qua Tailscale
+1. ✅ Scaffold Go/Chi, config, logging (slog), Mongo (Atlas), compose
+2. ✅ Google OAuth + session + middleware phân quyền
+3. ✅ CRUD conversation/message, files (upload, sniff, extract)
+4. ✅ Provider LLM + agent loop + SSE; provider image + tool
+5. ✅ Admin, thống kê, health
+6. Bỏ mock ở frontend, test end-to-end với model thật qua Tailscale (backend: `make test-api-e2e`)
 
 **Giai đoạn 3, Hoàn thiện**
 Rate limit, CSP/headers, nginx, backup, tối ưu (virtualize danh sách tin nhắn dài, cache thumbnail), sửa lỗi.

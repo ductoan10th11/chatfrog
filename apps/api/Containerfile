@@ -1,0 +1,20 @@
+# chatfrog-api: static Go binary on Alpine (wget for the compose healthcheck, CA roots for Atlas TLS).
+
+FROM docker.io/library/golang:1.27-alpine AS build
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+ARG VERSION=dev
+RUN CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" -o /out/chatfrog ./cmd/server
+
+FROM docker.io/library/alpine:3.22
+RUN apk add --no-cache ca-certificates tzdata \
+ && adduser -D -H -u 10001 chatfrog \
+ && mkdir -p /data/files && chown chatfrog:chatfrog /data/files
+COPY --from=build /out/chatfrog /usr/local/bin/chatfrog
+USER chatfrog
+ENV FILES_DIR=/data/files
+VOLUME /data/files
+EXPOSE 9260
+ENTRYPOINT ["/usr/local/bin/chatfrog"]

@@ -9,6 +9,15 @@ export type DisplayItem = {
   live: boolean
 }
 
+/** Server message id -> the React key it was first rendered under (optimistic / live). */
+const keyAliases = new Map<string, string>()
+
+export function aliasKey(messageId: string, key: string) {
+  if (messageId !== key) keyAliases.set(messageId, key)
+}
+
+const keyOf = (id: string) => keyAliases.get(id) ?? id
+
 /**
  * Merge persisted messages with the in-flight generation:
  *  - messages from `cutoffMessageId` on are hidden (edit / regenerate replace them),
@@ -28,7 +37,11 @@ export function buildDisplayItems(
     const liveIds = new Set([live.userMessage?.id, live.assistantMessage?.id].filter(Boolean))
     base = base.filter((m) => !liveIds.has(m.id))
   }
-  const items: DisplayItem[] = base.map((message) => ({ key: message.id, message, live: false }))
+  const items: DisplayItem[] = base.map((message) => ({
+    key: keyOf(message.id),
+    message,
+    live: false,
+  }))
   if (live?.userMessage) {
     items.push({ key: live.userKey, message: live.userMessage, live: false })
   }

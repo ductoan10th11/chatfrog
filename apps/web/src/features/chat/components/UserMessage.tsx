@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react'
+import { memo, useLayoutEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { S } from '@/lib/strings'
@@ -13,7 +13,8 @@ type Props = {
   onEdit: (message: Message, content: string, attachmentIds: string[]) => void
 }
 
-export function UserMessage({ message, canEdit, onEdit }: Props) {
+/** Memoized: unaffected by the frames of a streaming answer. */
+export const UserMessage = memo(function UserMessage({ message, canEdit, onEdit }: Props) {
   const [editing, setEditing] = useState(false)
   const text = message.parts.flatMap((p) => (p.type === 'text' ? [p.text] : [])).join('\n\n')
   const attachments = message.parts.flatMap((p) => (p.type === 'attachment' ? [p.file] : []))
@@ -52,7 +53,7 @@ export function UserMessage({ message, canEdit, onEdit }: Props) {
       <MessageActions copyText={text} onEdit={canEdit ? () => setEditing(true) : undefined} />
     </article>
   )
-}
+})
 
 function InlineEditor({
   initial,
