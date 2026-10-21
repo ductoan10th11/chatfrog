@@ -8,12 +8,21 @@ import './index.css'
 
 watchSystemTheme()
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <div className="flex h-full items-center justify-between p-4">
-      <h1 className="text-xl font-semibold">{S.app.name}</h1>
-      <ThemeToggle />
-    </div>
-    <Toaster />
-  </StrictMode>,
-)
+async function enableMocking() {
+  if (import.meta.env.VITE_MOCK === '1') {
+    const { startMocking } = await import('@/mocks/browser')
+    await startMocking()
+  }
+}
+
+void enableMocking().then(() => {
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <div className="flex h-full items-center justify-between p-4">
+        <h1 className="text-xl font-semibold">{S.app.name}</h1>
+        <ThemeToggle />
+      </div>
+      <Toaster />
+    </StrictMode>,
+  )
+})
