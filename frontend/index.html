@@ -3,8 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="description" content="ChatFrog: trợ lý AI tự host" />
     <title>ChatFrog</title>
+    <!-- Apply the saved theme before first paint to avoid a flash. Keep in sync with src/lib/theme.ts. -->
+    <script>
+      ;(function () {
+        var t = 'system'
+        try {
+          var v = localStorage.getItem('cf-theme')
+          if (v === 'light' || v === 'dark' || v === 'system') t = v
+        } catch (e) {}
+        var dark =
+          t === 'dark' ||
+          (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        var root = document.documentElement
+        if (dark) root.classList.add('dark')
+        root.style.colorScheme = dark ? 'dark' : 'light'
+        var m = document.querySelector('meta[name="theme-color"]')
+        if (m) m.setAttribute('content', dark ? '#0f1110' : '#ffffff')
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>
