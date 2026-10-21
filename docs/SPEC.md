@@ -104,10 +104,13 @@ Hành vi mong muốn (ghi trong system prompt):
 Browser (React SPA, PWA)
    │ HTTPS
    ▼
-nginx (host, chat.naot.me) ── TLS, limit_req, phục vụ frontend/dist
-   │ /api/*  → 127.0.0.1:8080  (proxy_buffering off cho SSE)
+Cloudflare (TLS, proxy)
+   │ HTTP
    ▼
-api (Go/Chi, container podman) ──► mongo (container, không expose ra ngoài)
+nginx (host :80, chat.naot.me) ── limit_req, phục vụ apps/web/dist
+   │ /api/*  → 127.0.0.1:9260  (proxy_buffering off cho SSE)
+   ▼
+chatfrog-api (Go/Chi, container) ──► chatfrog-db (MongoDB, container, 127.0.0.1:9261)
    │                             └► /data/files (volume: upload + ảnh đã tạo)
    │  Tailscale (LAN)
    ├──► LLM server   (OpenAI-compatible /v1/chat/completions, stream, tools)
@@ -123,10 +126,14 @@ api (Go/Chi, container podman) ──► mongo (container, không expose ra ngo�
 ```
 .
 ├── Makefile
-├── frontend/                 # Vite + React + TS
-├── backend/
-│   ├── cmd/server/main.go
-│   └── internal/
+├── compose.yaml              # 2 container: api (:9260) + db (:9261)
+├── .env.example
+├── apps/
+│   ├── web/                  # Vite + React + TS → dist/ (nginx phục vụ trực tiếp)
+│   └── api/                  # Go/Chi
+│       ├── Containerfile
+│       ├── cmd/server/main.go
+│       └── internal/
 │       ├── config/           # đọc env
 │       ├── httpapi/          # router Chi, middleware, handlers
 │       ├── auth/             # Google OIDC, session
@@ -135,11 +142,8 @@ api (Go/Chi, container podman) ──► mongo (container, không expose ra ngo�
 │       ├── provider/         # LLM / Image client (openai-go)
 │       ├── files/            # upload, sniffing, text extraction, storage
 │       ├── store/            # repository Mongo
-│       └── admin/
-├── deploy/
-│   ├── compose.yaml          # api + mongo
-│   └── Containerfile.api
-├── nginx/chat.naot.me.conf
+│           └── admin/
+├── nginx/chat.naot.me.conf   # symlink vào /etc/nginx/sites-enabled
 └── docs/
 ```
 
@@ -192,8 +196,8 @@ File lưu ở `FILES_DIR/<yyyy>/<mm>/<file_id>` (tên file không dùng input c�
 | Biến | Ví dụ / mặc định |
 |---|---|
 | `APP_ORIGIN` | `https://chat.naot.me` |
-| `HTTP_ADDR` | `:8080` |
-| `MONGO_URI` | `mongodb://chatfrog:***@mongo:27017/chatfrog?authSource=admin` |
+| `HTTP_ADDR` | `:9260` |
+| `MONGO_URI` | `mongodb://chatfrog:***@db:27017/chatfrog?authSource=admin` (compose tự dựng từ `MONGO_INITDB_ROOT_*`) |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | — |
 | `ADMIN_EMAILS` / `ALLOWED_EMAILS` | danh sách email cách nhau bằng dấu phẩy |
 | `SESSION_TTL` | `720h` |
@@ -261,16 +265,24 @@ Tiếng Việt, gom vào một file `src/lib/strings.ts`. Không dùng thư vi�
 
 ## 11. Hạ tầng và triển khai
 
-- **VPS** chính là máy chứa repo này: build và deploy tại chỗ (`make deploy`), không cần ssh/rsync sang máy khác. VPS chỉ chạy nginx (host), container `api` và container `mongo`. Model chạy ở máy khác trong tailnet.
-- **Git**: remote GitHub.
-- **Podman**: `deploy/compose.yaml` chạy bằng `podman compose`. Volume: `chatfrog-mongo`, `chatfrog-files`. Container `api` publish `127.0.0.1:8080`. Có thể chuyển sang Quadlet (systemd) để tự khởi động cùng máy.
+- **VPS** chính là máy chứa repo này: build và deploy tại chỗ, không cần ssh/rsync. Model chạy ở máy khác trong tailnet.
+- **Chỉ 2 container** (podman, `compose.yaml` ở gốc repo, chạy bằng `podman compose`):
+
+  | Container | Cổng (chỉ bind 127.0.0.1) | Volume |
+  |---|---|---|
+  | `chatfrog-api` | `9260` | `chatfrog-files` → `/data/files` |
+  | `chatfrog-db` (mongo:8.0) | `9261` → 27017 | `chatfrog-db-data` |
+
+- **Web** không chạy container: `make build-web` ra `apps/web/dist`, nginx trên host phục vụ trực tiếp từ thư mục đó.
+- **nginx** (`nginx/chat.naot.me.conf`, symlink vào `/etc/nginx/sites-enabled/`): nghe cổng 80, TLS do Cloudflare proxy lo, lấy IP thật từ `CF-Connecting-IP`; `/api/` → `127.0.0.1:9260`, không buffer (SSE), timeout 600s; `/api/files` cho body 25 MB; `/api/auth/` có `limit_req`; `/assets/` cache 1 năm; `index.html` và service worker `no-cache`; SPA fallback.
 - **Tailscale**: container gọi model server qua MagicDNS/IP tailnet. Mạng rootless của podman (pasta) đi ra ngoài qua host nên truy cập được tailnet; cần kiểm tra lại khi triển khai.
-- **nginx** (`nginx/chat.naot.me.conf`): TLS bằng Let's Encrypt (certbot); `root` trỏ tới frontend đã build, `try_files $uri /index.html`; `location /api/` dùng `proxy_pass http://127.0.0.1:8080`, `proxy_buffering off`, `proxy_read_timeout 300s`, `client_max_body_size 25m`.
-- **Backup**: `make db-backup` → `mongodump` nén theo ngày; thư mục files backup bằng rsync.
+- **Xem trước khi chưa có api**: `make build-web-mock` build kèm mock API (MSW) để nginx phục vụ bản demo. Khi có api, chạy lại `make build-web` để thay.
+- **Backup**: `make db-backup` → `mongodump` nén theo ngày.
+- **Git**: remote GitHub.
 
 ## 12. Lộ trình
 
-**Giai đoạn 0, Tài liệu** ✅ SPEC.md, API.md, Makefile
+**Giai đoạn 0, Tài liệu** ✅ SPEC.md, API.md, Makefile, compose.yaml, nginx
 
 **Giai đoạn 1, Frontend (chạy với MSW mock)**
 1. Scaffold Vite + Tailwind + shadcn, design tokens, theme light/dark

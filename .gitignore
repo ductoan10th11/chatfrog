@@ -3,13 +3,13 @@
 .env.*
 !.env.example
 
-# frontend
+# web
 node_modules/
-frontend/dist/
+apps/web/dist/
 *.tsbuildinfo
 
-# backend
-backend/bin/
+# api
+apps/api/bin/
 *.test
 coverage.out
 
