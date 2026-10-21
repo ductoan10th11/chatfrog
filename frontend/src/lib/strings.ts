@@ -92,10 +92,6 @@ export const S = {
       { label: 'Vẽ một bức ảnh', prompt: 'Vẽ ảnh một chú ếch xanh ngồi trên lá sen dưới mưa nhẹ.' },
       { label: 'Chỉnh sửa ảnh', prompt: 'Sửa bức ảnh vừa rồi, đổi nền thành hoàng hôn.' },
     ],
-    moreIdeas: [
-      { label: 'Xếp hàng chờ', prompt: 'Chờ tới lượt rồi trả lời giúp mình nhé.' },
-      { label: 'Thử gặp lỗi', prompt: 'Cho mình xem một lỗi từ máy chủ.' },
-    ],
     suggestionsLabel: 'Gợi ý',
   },
 

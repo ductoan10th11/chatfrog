@@ -26,6 +26,8 @@ export function AppShell() {
           side="left"
           showCloseButton={false}
           className="w-[85vw] max-w-80 gap-0 bg-surface p-0"
+          // Do not focus the search field on open (it would pop the keyboard up on phones).
+          onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <SheetTitle className="sr-only">{S.nav.sidebar}</SheetTitle>
           <SheetDescription className="sr-only">{S.nav.sidebar}</SheetDescription>

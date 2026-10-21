@@ -1,16 +1,46 @@
+import { useCallback, useEffect, useMemo } from 'react'
 import { Link, useParams } from 'react-router'
 import { ErrorState } from '@/components/ErrorState'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { isApiError, errorMessage } from '@/lib/api'
-import { S } from '@/lib/strings'
 import { useConversation } from '@/features/conversations/queries'
+import { errorMessage, isApiError } from '@/lib/api'
+import { S } from '@/lib/strings'
+import { Composer } from './components/Composer'
+import { MessageList } from './components/MessageList'
+import { buildDisplayItems, regenerableId } from './display'
 import { flattenMessages, useMessages } from './queries'
+import { useLiveGeneration } from './store'
+import { useGenerate } from './useGenerate'
 
+/** `/c/:id`. Keyed by id so per-conversation UI state (editing, scroll) resets on navigation. */
 export function ChatPage() {
   const { id = '' } = useParams()
+  return <ChatView key={id} id={id} />
+}
+
+function ChatView({ id }: { id: string }) {
   const conversation = useConversation(id)
   const messages = useMessages(id)
+  const live = useLiveGeneration(id)
+  const generate = useGenerate()
+
+  const title = conversation.data?.title
+  useEffect(() => {
+    document.title = title ? `${title} · ${S.app.name}` : S.app.name
+    return () => {
+      document.title = S.app.name
+    }
+  }, [title])
+
+  const persisted = useMemo(() => flattenMessages(messages.data?.pages), [messages.data])
+  const items = useMemo(() => buildDisplayItems(persisted, live), [persisted, live])
+  const regenId = live ? null : regenerableId(items)
+
+  const { hasNextPage, isFetchingNextPage, fetchNextPage } = messages
+  const loadOlder = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) void fetchNextPage()
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   if (conversation.isError) {
     const notFound = isApiError(conversation.error) && conversation.error.status === 404
@@ -27,18 +57,47 @@ export function ChatPage() {
       </ErrorState>
     )
   }
-  if (messages.isPending) return <Skeleton className="m-4 h-24" />
 
   return (
-    <div className="mx-auto h-full max-w-3xl space-y-4 overflow-y-auto p-4">
-      {flattenMessages(messages.data?.pages).map((m) => (
-        <div
-          key={m.id}
-          className={m.role === 'user' ? 'ml-auto w-fit rounded-2xl bg-surface px-4 py-2' : ''}
-        >
-          {m.parts.map((p, i) => (p.type === 'text' ? <p key={i}>{p.text}</p> : null))}
-        </div>
-      ))}
+    <div className="flex h-full flex-col">
+      <div className="min-h-0 flex-1">
+        {messages.isError ? (
+          <ErrorState message={errorMessage(messages.error)} onRetry={() => messages.refetch()} />
+        ) : messages.isPending ? (
+          <div
+            className="mx-auto max-w-3xl space-y-4 p-4"
+            aria-busy="true"
+            aria-label={S.app.loading}
+          >
+            <Skeleton className="ml-auto h-10 w-2/3" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+        ) : items.length === 0 ? (
+          <p className="flex h-full items-center justify-center text-sm text-muted-foreground">
+            {S.chat.emptyConversation}
+          </p>
+        ) : (
+          <MessageList
+            items={items}
+            queuePosition={live?.queuePosition ?? null}
+            regenerableId={regenId}
+            busy={!!live}
+            hasOlder={!!hasNextPage}
+            loadingOlder={isFetchingNextPage}
+            onLoadOlder={loadOlder}
+            onRegenerate={(m) => void generate.regenerate(id, m)}
+            onEdit={(m, content, attachmentIds) =>
+              void generate.edit(id, m, content, attachmentIds)
+            }
+          />
+        )}
+      </div>
+      <Composer
+        busy={!!live}
+        focusKey={id}
+        onSend={(text) => generate.send(id, text)}
+        onStop={() => generate.stop(id)}
+      />
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
+import { useChatStore } from '@/features/chat/store'
 import { fetchMe, logout } from './api'
 
 export const ME_KEY = ['me'] as const
@@ -20,6 +21,7 @@ export function useLogout() {
     try {
       await logout()
     } finally {
+      useChatStore.getState().abortAll()
       qc.clear()
       qc.setQueryData(ME_KEY, null)
       navigate('/login', { replace: true })

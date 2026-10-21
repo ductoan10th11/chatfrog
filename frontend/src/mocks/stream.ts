@@ -170,6 +170,15 @@ async function run(input: GenerationInput, signal: AbortSignal, write: (s: strin
   }
 
   const finish = (status: Message['status'], error?: Message['error']) => {
+    if (status !== 'complete') {
+      // Unfinished tool calls cannot complete any more.
+      for (const p of msg.parts) {
+        if (p.type === 'tool_call' && (p.status === 'queued' || p.status === 'running')) {
+          p.status = 'error'
+          p.error = 'Đã dừng'
+        }
+      }
+    }
     msg.status = status
     if (error) msg.error = error
     conversation.updated_at = nowIso()

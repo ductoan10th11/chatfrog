@@ -31,3 +31,8 @@ if (typeof window !== 'undefined') {
   Element.prototype.releasePointerCapture ??= () => {}
   Element.prototype.setPointerCapture ??= () => {}
 }
+
+// The orb draws on a canvas, which jsdom does not implement.
+vi.mock('thinking-orbs', () => ({
+  ThinkingOrb: ({ state }: { state: string }) => <span data-testid="orb" data-state={state} />,
+}))
