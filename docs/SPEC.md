@@ -182,7 +182,7 @@ File lưu ở `FILES_DIR/<yyyy>/<mm>/<file_id>` (tên file không dùng input c�
 - **CSRF**: SameSite=Lax + kiểm tra header `Origin` trùng `APP_ORIGIN` với mọi request khác GET.
 - **Rate limit**: nginx `limit_req` cho `/api/auth/*`; trong Go dùng token bucket theo user cho các endpoint gửi tin nhắn và upload.
 - **Upload**: giới hạn kích thước ở cả nginx và Go; sniff magic bytes; trả file kèm `X-Content-Type-Options: nosniff`, file không phải ảnh trả với `Content-Disposition: attachment`; luôn kiểm tra quyền sở hữu.
-- **Frontend**: không render raw HTML trong markdown; link ngoài mở với `rel="noopener noreferrer"`; CSP chặt (`default-src 'self'; img-src 'self' data: blob: https://lh3.googleusercontent.com`).
+- **Frontend**: không render raw HTML trong markdown; link ngoài mở với `rel="noopener noreferrer"`; CSP chặt (`default-src 'self'; img-src 'self' data: blob: https://lh3.googleusercontent.com`). Script chống nháy theme nằm inline trong `index.html` → `script-src` phải có `'sha256-…'` của script đó; `border-beam` chèn thẻ `<style>` lúc chạy → `style-src 'self' 'unsafe-inline'`.
 - **Header**: HSTS, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`.
 - **Hạ tầng**: Mongo bật auth và chỉ nằm trong network của podman; model server chỉ truy cập được qua Tailscale; `.env` có quyền 600, không commit.
 - Validate input tại handler: độ dài tin nhắn ≤ `MAX_MESSAGE_CHARS`, số file đính kèm ≤ 5.
