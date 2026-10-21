@@ -3,6 +3,8 @@ import { api, ApiError, toApiError } from '@/lib/api'
 import { installMockApi } from '@/test/mockServer'
 import type { Conversation, FileRef, Message, Page, User } from '@/types/api'
 import { pickScenario } from './scenarios'
+import { activeGenerations, db } from './db'
+import { generationStream } from './stream'
 import { mockConfig } from './utils'
 
 installMockApi()
@@ -291,28 +293,61 @@ describe('mock API: generation streams', () => {
     expect(msgs).toHaveLength(2)
     expect(msgs[0].parts).toEqual([{ type: 'text', text: 'Câu một đã sửa' }])
   })
+})
 
-  it('persists a stopped message when the client aborts', async () => {
-    mockConfig.speed = 1
-    const ac = new AbortController()
-    const res = await post(
-      '/api/conversations/new/messages',
-      { content: 'Xin chào' },
-      { signal: ac.signal },
-    )
-    const reader = res.body!.getReader()
+describe('generationStream abort handling', () => {
+  async function start(signal: AbortSignal) {
+    const s = db()
+    const conversation = s.conversations[0]
+    const userMessage = s.messages[conversation.id][0]
+    const assistantMessage: Message = {
+      id: 'a'.repeat(24),
+      conversation_id: conversation.id,
+      role: 'assistant',
+      status: 'streaming',
+      parts: [],
+      created_at: new Date().toISOString(),
+    }
+    s.messages[conversation.id].push(assistantMessage)
+    const stream = generationStream({
+      conversation,
+      userMessage,
+      assistantMessage,
+      userText: 'Xin chào',
+      isNewConversation: false,
+      signal,
+    })
+    return { stream, assistantMessage }
+  }
+
+  async function readUntil(reader: ReadableStreamDefaultReader<Uint8Array>, needle: string) {
     const dec = new TextDecoder()
     let seen = ''
-    while (!seen.includes('reasoning.delta')) {
+    while (!seen.includes(needle)) {
       const { value, done } = await reader.read()
       if (done) break
       seen += dec.decode(value)
     }
+  }
+
+  it('marks the message stopped when the request signal aborts', async () => {
+    mockConfig.speed = 1
+    const ac = new AbortController()
+    const { stream, assistantMessage } = await start(ac.signal)
+    const reader = stream.getReader()
+    await readUntil(reader, 'reasoning.delta')
     ac.abort()
-    await reader.cancel().catch(() => {})
-    await new Promise((r) => setTimeout(r, 100))
-    const conv = await latestConversation()
-    const msgs = await api<Page<Message>>(`/api/conversations/${conv.id}/messages`)
-    expect(msgs.items.at(-1)?.status).toBe('stopped')
+    await vi.waitFor(() => expect(assistantMessage.status).toBe('stopped'))
+    expect(assistantMessage.parts.length).toBeGreaterThan(0)
+    expect(activeGenerations.size).toBe(0)
+  })
+
+  it('marks the message stopped when the consumer cancels the stream', async () => {
+    mockConfig.speed = 1
+    const { stream, assistantMessage } = await start(new AbortController().signal)
+    const reader = stream.getReader()
+    await readUntil(reader, 'reasoning.delta')
+    await reader.cancel()
+    await vi.waitFor(() => expect(assistantMessage.status).toBe('stopped'))
   })
 })
