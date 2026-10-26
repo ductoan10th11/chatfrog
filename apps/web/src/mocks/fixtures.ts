@@ -115,6 +115,13 @@ export function createSeed(now: number = Date.now()): DbState {
     prompt:
       'A cute green frog sitting on a lotus leaf in gentle rain, soft morning light, watercolor style',
   }
+  for (const [name, mime, size] of [
+    ['ghi-chu-hop-sprint.md', 'text/markdown', 2840],
+    ['bang-gia.csv', 'text/csv', 15360],
+  ] as const) {
+    const id = newId()
+    files[id] = { id, kind: 'upload', name, mime, size, url: `/api/files/${id}` }
+  }
   messages[frog.id] = [
     msg(frog.id, 'user', now - 25 * MIN, [
       { type: 'text', text: 'Vẽ ảnh một chú ếch xanh ngồi trên lá sen dưới mưa nhẹ.' },

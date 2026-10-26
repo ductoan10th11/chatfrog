@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 	"unicode/utf8"
 
 	"github.com/go-chi/chi/v5"
@@ -136,11 +138,11 @@ func (s *Server) sendMessage(w http.ResponseWriter, r *http.Request) {
 		ConversationID: conv.ID, UserID: user.ID, Role: store.RoleUser, Status: store.MsgComplete,
 		Parts: append(attachmentParts(attachments), store.Part{Type: store.PartText, Text: content}),
 	}
-	if err := s.store.InsertMessage(ctx, userMsg); err != nil {
-		httpx.Internal(w, r, err)
-		return
-	}
-	if err := s.store.AttachFiles(ctx, fileIDs(attachments), conv.ID); err != nil {
+	// Independent round trips to the database: run them together.
+	if err := parallel(
+		func() error { return s.store.InsertMessage(ctx, userMsg) },
+		func() error { return s.store.AttachFiles(ctx, fileIDs(attachments), conv.ID) },
+	); err != nil {
 		httpx.Internal(w, r, err)
 		return
 	}
@@ -242,18 +244,34 @@ func (s *Server) generate(w http.ResponseWriter, r *http.Request, genCtx context
 		ConversationID: conv.ID, UserID: user.ID, Role: store.RoleAssistant, Status: store.MsgStreaming,
 		Parts: []store.Part{},
 	}
-	if err := s.store.InsertMessage(r.Context(), assistant); err != nil {
-		httpx.Internal(w, r, err)
-		return
-	}
+	// Ids are assigned here so the assistant message sorts after the user message.
+	assistant.ID, assistant.CreatedAt = bson.NewObjectID(), time.Now().UTC()
 	conv.UpdatedAt = assistant.CreatedAt
-	if err := s.store.TouchConversation(r.Context(), conv.ID); err != nil {
+	if err := parallel(
+		func() error { return s.store.InsertMessage(r.Context(), assistant) },
+		func() error { return s.store.TouchConversation(r.Context(), conv.ID) },
+	); err != nil {
 		httpx.Internal(w, r, err)
 		return
 	}
 	sse := httpx.NewSSE(w)
 	defer sse.Close()
 	s.chat.Run(genCtx, &chat.Turn{User: user, Conversation: conv, UserMessage: userMsg, Assistant: assistant}, sse.Emit)
+}
+
+// parallel runs fns concurrently and returns the first error.
+func parallel(fns ...func() error) error {
+	errs := make([]error, len(fns))
+	var wg sync.WaitGroup
+	for i, fn := range fns {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			errs[i] = fn()
+		}()
+	}
+	wg.Wait()
+	return errors.Join(errs...)
 }
 
 func (s *Server) messageAndConversation(w http.ResponseWriter, r *http.Request) (*store.Message, *store.Conversation, bool) {

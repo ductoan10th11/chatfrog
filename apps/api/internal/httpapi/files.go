@@ -134,6 +134,36 @@ func (s *Server) uploadReadError(w http.ResponseWriter, err error) {
 	httpx.BadRequest(w, "Dữ liệu multipart không hợp lệ")
 }
 
+// GET /api/files?type=image|document&limit&cursor: the user's files, newest first.
+func (s *Server) listFiles(w http.ResponseWriter, r *http.Request) {
+	user := auth.UserFrom(r.Context())
+	var images bool
+	switch r.URL.Query().Get("type") {
+	case "image":
+		images = true
+	case "document":
+	default:
+		httpx.BadRequest(w, "type phải là image hoặc document")
+		return
+	}
+	limit := limitParam(r, 30, 100)
+	offset := offsetCursor(r)
+	list, more, err := s.store.ListFiles(r.Context(), user.ID, images, offset, limit)
+	if err != nil {
+		httpx.Internal(w, r, err)
+		return
+	}
+	items := make([]store.FileListItem, len(list))
+	for i := range list {
+		items[i] = list[i].ListItem()
+	}
+	next := ""
+	if more {
+		next = encodeOffset(offset + limit)
+	}
+	httpx.JSON(w, http.StatusOK, newPage(items, next))
+}
+
 // GET /api/files/{id}: images inline, everything else as attachment.
 func (s *Server) serveFile(w http.ResponseWriter, r *http.Request) {
 	f, ok := s.file(w, r)

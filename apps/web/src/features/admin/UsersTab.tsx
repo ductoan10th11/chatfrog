@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Loader2, Search } from 'lucide-react'
+import { Ellipsis, Loader2, Search } from 'lucide-react'
 import { ErrorState } from '@/components/ErrorState'
 import {
   AlertDialog,
@@ -13,8 +13,15 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useMe } from '@/features/auth/useMe'
 import { errorMessage } from '@/lib/api'
 import { useDebouncedValue } from '@/lib/hooks'
@@ -50,23 +57,21 @@ export function UsersTab() {
   const busyId = update.isPending ? update.variables?.id : undefined
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div role="group" aria-label={T.statusLabel} className="flex flex-wrap gap-1.5">
-          {FILTERS.map((f) => (
-            <Button
-              key={f.value}
-              type="button"
-              size="sm"
-              variant={status === f.value ? 'default' : 'outline'}
-              aria-pressed={status === f.value}
-              onClick={() => setStatus(f.value)}
-            >
-              {f.label}
-            </Button>
-          ))}
-        </div>
-        <div className="relative sm:w-64">
+    <div className="@container space-y-4">
+      <div className="flex flex-col gap-3 @xl:flex-row @xl:items-center @xl:justify-between">
+        <Tabs
+          value={status || 'all'}
+          onValueChange={(v) => setStatus(v === 'all' ? '' : (v as StatusFilter))}
+        >
+          <TabsList aria-label={T.statusLabel}>
+            {FILTERS.map((f) => (
+              <TabsTrigger key={f.value} value={f.value || 'all'}>
+                {f.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
+        <div className="relative @xl:w-64">
           <Search
             className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground"
             aria-hidden
@@ -158,17 +163,25 @@ type RowProps = {
 }
 
 function UserRow({ user: u, isSelf, busy, onPatch, onBlock }: RowProps) {
-  const aria = (action: string) => `${action}: ${u.name}`
+  const items: { label: string; onSelect: () => void; destructive?: boolean }[] = []
+  if (u.status === 'pending') items.push({ label: T.approve, onSelect: () => onPatch({ status: 'active' }) })
+  if (u.status === 'blocked') items.push({ label: T.unblock, onSelect: () => onPatch({ status: 'active' }) })
+  if (u.status === 'active' && u.role === 'user')
+    items.push({ label: T.makeAdmin, onSelect: () => onPatch({ role: 'admin' }) })
+  if (!isSelf && u.role === 'admin')
+    items.push({ label: T.removeAdmin, onSelect: () => onPatch({ role: 'user' }) })
+  if (!isSelf && u.status !== 'blocked')
+    items.push({ label: T.block, onSelect: onBlock, destructive: true })
   return (
     <li
       data-testid="admin-user"
       aria-busy={busy}
       className={cn(
-        'flex flex-col gap-3 rounded-xl border border-border bg-card p-3 lg:flex-row lg:items-center lg:gap-4',
+        'relative flex flex-col gap-3 rounded-xl border border-border bg-card p-3 @4xl:flex-row @4xl:items-center @4xl:gap-4',
         busy && 'opacity-70',
       )}
     >
-      <div className="flex min-w-0 items-center gap-3 lg:flex-1">
+      <div className="flex min-w-0 items-center gap-3 pr-10 @4xl:flex-1 @4xl:pr-0">
         <Avatar className="size-9">
           {u.avatar_url && <AvatarImage src={u.avatar_url} alt="" referrerPolicy="no-referrer" />}
           <AvatarFallback className="bg-primary text-xs font-medium text-primary-foreground">
@@ -184,7 +197,7 @@ function UserRow({ user: u, isSelf, busy, onPatch, onBlock }: RowProps) {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground lg:w-72 lg:shrink-0">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground @4xl:w-72 @4xl:shrink-0">
         <div className="flex items-center gap-1.5">
           <Badge tone={u.role === 'admin' ? 'ok' : 'neutral'}>{S.admin.role[u.role]}</Badge>
           <Badge tone={STATUS_TONE[u.status]}>{S.admin.status[u.status]}</Badge>
@@ -201,61 +214,32 @@ function UserRow({ user: u, isSelf, busy, onPatch, onBlock }: RowProps) {
         </span>
       </div>
 
-      <div className="flex flex-wrap gap-1.5 lg:w-60 lg:shrink-0 lg:justify-end">
-        {busy && <Loader2 className="size-4 animate-spin self-center" aria-hidden />}
-        {u.status === 'pending' && (
-          <Button
-            size="sm"
-            disabled={busy}
-            aria-label={aria(T.approve)}
-            onClick={() => onPatch({ status: 'active' })}
-          >
-            {T.approve}
-          </Button>
-        )}
-        {u.status === 'blocked' && (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={busy}
-            aria-label={aria(T.unblock)}
-            onClick={() => onPatch({ status: 'active' })}
-          >
-            {T.unblock}
-          </Button>
-        )}
-        {u.status === 'active' && u.role === 'user' && (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={busy}
-            aria-label={aria(T.makeAdmin)}
-            onClick={() => onPatch({ role: 'admin' })}
-          >
-            {T.makeAdmin}
-          </Button>
-        )}
-        {!isSelf && u.role === 'admin' && (
-          <Button
-            size="sm"
-            variant="outline"
-            disabled={busy}
-            aria-label={aria(T.removeAdmin)}
-            onClick={() => onPatch({ role: 'user' })}
-          >
-            {T.removeAdmin}
-          </Button>
-        )}
-        {!isSelf && u.status !== 'blocked' && (
-          <Button
-            size="sm"
-            variant="destructive"
-            disabled={busy}
-            aria-label={aria(T.block)}
-            onClick={onBlock}
-          >
-            {T.block}
-          </Button>
+      <div className="absolute top-2 right-2 flex items-center gap-1 @4xl:static">
+        {busy && <Loader2 className="size-4 animate-spin text-muted-foreground" aria-hidden />}
+        {items.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                disabled={busy}
+                aria-label={`${T.actions}: ${u.name}`}
+              >
+                <Ellipsis aria-hidden />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {items.map(({ label, onSelect, destructive }) => (
+                <DropdownMenuItem
+                  key={label}
+                  variant={destructive ? 'destructive' : 'default'}
+                  onSelect={onSelect}
+                >
+                  {label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
     </li>

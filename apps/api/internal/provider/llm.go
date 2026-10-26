@@ -140,6 +140,9 @@ read:
 					pc.id = tc.ID
 				}
 				if tc.Function.Name != "" {
+					if pc.name == "" && req.OnToolCall != nil {
+						req.OnToolCall(tc.Function.Name)
+					}
 					pc.name = tc.Function.Name
 				}
 				pc.args.WriteString(tc.Function.Arguments)

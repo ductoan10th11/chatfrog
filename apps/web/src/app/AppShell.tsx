@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Link, Outlet, useMatch } from 'react-router'
+import { Link, Outlet, useLocation, useMatch } from 'react-router'
 import { Menu, SquarePen } from 'lucide-react'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
 import { useConversation } from '@/features/conversations/queries'
 import { Sidebar } from '@/features/conversations/Sidebar'
+import { SettingsModal } from '@/features/settings/SettingsModal'
 import { S } from '@/lib/strings'
 
 /** Sidebar + main. Below 768px the sidebar becomes a drawer. */
@@ -13,7 +14,12 @@ export function AppShell() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const match = useMatch('/c/:id')
   const conversation = useConversation(match?.params.id)
-  const title = match ? conversation.data?.title || S.nav.untitled : S.app.name
+  const section = useLocation().pathname.slice(1)
+  const title = match
+    ? conversation.data?.title || S.nav.untitled
+    : section === 'images' || section === 'documents'
+      ? S.library[section]
+      : S.app.name
 
   return (
     <div className="flex h-dvh overflow-hidden">
@@ -57,6 +63,8 @@ export function AppShell() {
           <Outlet />
         </main>
       </div>
+
+      <SettingsModal />
     </div>
   )
 }

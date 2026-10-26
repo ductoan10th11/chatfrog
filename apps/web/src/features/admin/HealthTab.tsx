@@ -28,19 +28,19 @@ export function HealthTab() {
       </div>
 
       {health.isPending ? (
-        <div className="grid gap-3 sm:grid-cols-3" aria-busy="true">
+        <div className="space-y-px overflow-hidden rounded-xl border" aria-busy="true">
           {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className="h-40" />
+            <Skeleton key={i} className="h-16 rounded-none" />
           ))}
         </div>
       ) : health.isError ? (
         <ErrorState message={T.loadError} onRetry={() => health.refetch()} />
       ) : (
-        <div className="grid gap-3 sm:grid-cols-3">
-          <ServiceCard title={T.llm} service={health.data.llm} />
-          <ServiceCard title={T.image} service={health.data.image} />
-          <ServiceCard title={T.mongo} service={health.data.mongo} />
-        </div>
+        <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
+          <ServiceRow title={T.llm} service={health.data.llm} />
+          <ServiceRow title={T.image} service={health.data.image} />
+          <ServiceRow title={T.mongo} service={health.data.mongo} />
+        </ul>
       )}
     </div>
   )
@@ -59,7 +59,7 @@ function StatusBadge({ ok }: { ok: boolean }) {
   )
 }
 
-function ServiceCard({
+function ServiceRow({
   title,
   service,
 }: {
@@ -68,35 +68,38 @@ function ServiceCard({
 }) {
   const detailed = 'model' in service ? service : null
   return (
-    <section
-      aria-label={title}
-      className="space-y-3 rounded-xl border border-border bg-card p-4 text-sm"
-    >
-      <div className="flex items-center justify-between gap-2">
+    <li aria-label={title} className="flex flex-col gap-1.5 px-4 py-3 text-sm">
+      <div className="flex items-center justify-between gap-3">
         <h3 className="font-medium">{title}</h3>
         <StatusBadge ok={service.ok} />
       </div>
       {detailed && (
-        <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1.5 text-xs">
-          <dt className="text-muted-foreground">{T.latency}</dt>
-          <dd className="text-right tabular-nums">{formatLatency(detailed.latency_ms)}</dd>
-          <dt className="text-muted-foreground">{T.model}</dt>
-          <dd className="truncate text-right" title={detailed.model}>
-            {detailed.model}
-          </dd>
-          <dt className="text-muted-foreground">{T.checkedAt}</dt>
-          <dd className="text-right">{formatDateTime(detailed.checked_at)}</dd>
-          <dt className="text-muted-foreground">{T.lastError}</dt>
-          <dd
-            className={cn(
-              'text-right break-words',
-              detailed.last_error ? 'text-destructive' : 'text-muted-foreground',
-            )}
-          >
-            {detailed.last_error ?? T.noError}
-          </dd>
+        <dl className="flex flex-wrap gap-x-5 gap-y-1 text-xs">
+          <Meta label={T.latency}>
+            <span className="tabular-nums">{formatLatency(detailed.latency_ms)}</span>
+          </Meta>
+          <Meta label={T.model}>
+            <span className="max-w-48 truncate" title={detailed.model}>
+              {detailed.model}
+            </span>
+          </Meta>
+          <Meta label={T.checkedAt}>{formatDateTime(detailed.checked_at)}</Meta>
+          <Meta label={T.lastError}>
+            <span className={detailed.last_error ? 'text-destructive' : 'text-muted-foreground'}>
+              {detailed.last_error ?? T.noError}
+            </span>
+          </Meta>
         </dl>
       )}
-    </section>
+    </li>
+  )
+}
+
+function Meta({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-baseline gap-1.5">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="min-w-0">{children}</dd>
+    </div>
   )
 }

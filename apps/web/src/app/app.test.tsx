@@ -25,23 +25,12 @@ describe('auth guard', () => {
 })
 
 describe('sidebar', () => {
-  it('shows pinned and time-grouped conversations and filters by search', async () => {
-    const user = userEvent.setup()
+  it('shows pinned and time-grouped conversations', async () => {
     renderApp('/')
     const nav = await screen.findByRole('navigation', { name: S.nav.sidebar })
     expect(within(nav).getByRole('region', { name: S.nav.pinned })).toBeInTheDocument()
     expect(within(nav).getByRole('region', { name: S.nav.today })).toBeInTheDocument()
     expect(within(nav).getByRole('link', { name: 'Ảnh chú ếch trên lá sen' })).toBeInTheDocument()
-
-    await user.type(screen.getByRole('searchbox', { name: S.nav.search }), 'lượng tử')
-    await waitFor(() =>
-      expect(
-        screen.queryByRole('link', { name: 'Ảnh chú ếch trên lá sen' }),
-      ).not.toBeInTheDocument(),
-    )
-    expect(
-      await screen.findByRole('link', { name: 'Giải thích điện toán lượng tử' }),
-    ).toBeInTheDocument()
   })
 
   it('renames a conversation inline and deletes it after confirmation', async () => {

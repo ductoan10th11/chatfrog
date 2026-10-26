@@ -57,9 +57,11 @@ type FunctionDef struct {
 }
 
 type ChatRequest struct {
-	Messages  []ChatMessage
-	Tools     []Tool
-	MaxTokens int
+	Messages []ChatMessage
+	Tools    []Tool
+	// OnToolCall fires when the model starts a tool call (name known, arguments still streaming).
+	OnToolCall func(name string)
+	MaxTokens  int
 	// ReasoningEffort: "" leaves the server default, "none" disables thinking.
 	ReasoningEffort string
 }

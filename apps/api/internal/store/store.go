@@ -83,6 +83,7 @@ func (s *Store) EnsureIndexes(ctx context.Context) error {
 		s.files: {
 			{Keys: bson.D{{Key: "user_id", Value: 1}, {Key: "created_at", Value: 1}}},
 			{Keys: bson.D{{Key: "conversation_id", Value: 1}}},
+			{Keys: bson.D{{Key: "user_id", Value: 1}, {Key: "created_at", Value: -1}}},
 		},
 		s.auditLogs: {
 			{Keys: bson.D{{Key: "created_at", Value: 1}}},

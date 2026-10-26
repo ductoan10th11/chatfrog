@@ -44,7 +44,7 @@ describe('AssistantMessage', () => {
     expect(screen.queryByText('nội dung suy nghĩ bí mật')).not.toBeInTheDocument()
   })
 
-  it('shows "Đang suy nghĩ…" with an orb while reasoning is streaming', () => {
+  it('shows "Đang suy nghĩ…" with shimmering text while reasoning is streaming', () => {
     renderMsg(
       {
         ...base,
@@ -57,16 +57,15 @@ describe('AssistantMessage', () => {
       'aria-expanded',
       'true',
     )
-    expect(screen.getAllByTestId('orb')[0]).toHaveAttribute('data-state', 'solving')
+    expect(screen.getAllByTestId('shimmer')[0]).toHaveTextContent(S.chat.thinking)
   })
 
-  it('uses orb states by phase: breathing (queued), composing (writing), shaping (image)', () => {
+  it('shows a shimmering label by phase: queued, writing, image', () => {
     const { rerender } = renderMsg(
       { ...base, status: 'streaming' },
       { live: true, queuePosition: 2 },
     )
-    expect(screen.getByTestId('orb')).toHaveAttribute('data-state', 'breathing')
-    expect(screen.getByText(S.chat.queued(2))).toBeInTheDocument()
+    expect(screen.getByTestId('shimmer')).toHaveTextContent(S.chat.queued(2))
 
     const props = { live: true, queuePosition: null, canRegenerate: false, onRegenerate: noop }
     rerender(
@@ -75,7 +74,7 @@ describe('AssistantMessage', () => {
         message={{ ...base, status: 'streaming', parts: [{ type: 'text', text: 'Xin' }] }}
       />,
     )
-    expect(screen.getByTestId('orb')).toHaveAttribute('data-state', 'composing')
+    expect(screen.getByTestId('shimmer')).toHaveTextContent(S.chat.writing)
 
     rerender(
       <AssistantMessage
@@ -95,7 +94,7 @@ describe('AssistantMessage', () => {
         }}
       />,
     )
-    expect(screen.getAllByTestId('orb').at(-1)).toHaveAttribute('data-state', 'shaping')
+    expect(screen.getAllByTestId('shimmer').at(-1)).toHaveTextContent(S.tool.generating)
   })
 
   it('shows the stopped notice and does not leave an interrupted tool call spinning', () => {

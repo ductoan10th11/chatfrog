@@ -30,7 +30,7 @@ var GenerateImageDef = provider.Tool{
 	Type: "function",
 	Function: provider.FunctionDef{
 		Name:        GenerateImageName,
-		Description: "Tạo ảnh mới hoặc chỉnh sửa ảnh có sẵn. Chỉ gọi khi người dùng muốn có ảnh. Viết prompt bằng tiếng Anh, chi tiết về chủ thể, bố cục, ánh sáng, phong cách.",
+		Description: "Tạo ảnh mới hoặc chỉnh sửa ảnh có sẵn. Chỉ gọi khi người dùng nói rõ muốn có ảnh hoặc chỉnh sửa ảnh. Không gọi cho yêu cầu văn bản, Markdown, tài liệu, file hay code. Viết prompt bằng tiếng Anh, chi tiết về chủ thể, bố cục, ánh sáng, phong cách.",
 		Parameters: json.RawMessage(`{
   "type": "object",
   "properties": {

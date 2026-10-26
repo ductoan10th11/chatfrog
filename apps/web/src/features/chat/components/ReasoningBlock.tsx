@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ChevronRight } from 'lucide-react'
-import { Orb } from '@/components/Orb'
+import { ShimmerText } from '@/components/ShimmerText'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { S } from '@/lib/strings'
 import { cn } from '@/lib/utils'
@@ -37,8 +37,9 @@ export function ReasoningBlock({ part, active }: Props) {
         className="group flex items-center gap-2 rounded-md py-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
         aria-label={`${label}. ${S.chat.toggleReasoning}`}
       >
-        {active && <Orb state="solving" size={20} />}
-        <span aria-live={active ? 'polite' : undefined}>{label}</span>
+        <span aria-live={active ? 'polite' : undefined}>
+          {active ? <ShimmerText>{label}</ShimmerText> : label}
+        </span>
         <ChevronRight
           className={cn('size-4 transition-transform', open && 'rotate-90')}
           aria-hidden

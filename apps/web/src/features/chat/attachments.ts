@@ -60,6 +60,37 @@ export function formatSize(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
+const SHRINK_ABOVE_BYTES = 400 * 1024
+const MAX_SIDE = 2048
+
+/**
+ * Photos are often several MB; the server only needs them at screen / vision resolution, so
+ * downscale to 2048px and re-encode as WebP before uploading. Falls back to the original file
+ * whenever that is not possible or not smaller (no canvas, decode error, tiny image…).
+ */
+export async function shrinkImage(file: File): Promise<File> {
+  if (!isImageMime(file.type) || file.size < SHRINK_ABOVE_BYTES) return file
+  if (typeof createImageBitmap !== 'function' || typeof document === 'undefined') return file
+  try {
+    const bitmap = await createImageBitmap(file)
+    const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height))
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale))
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale))
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return file
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+    bitmap.close()
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, 'image/webp', 0.85),
+    )
+    if (!blob || blob.type !== 'image/webp' || blob.size > file.size * 0.8) return file
+    return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.webp', { type: 'image/webp' })
+  } catch {
+    return file
+  }
+}
+
 /** `POST /api/files`; omit `conversationId` for a conversation that does not exist yet. */
 export function uploadFile(
   file: File,

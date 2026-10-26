@@ -15,6 +15,7 @@ import {
   deleteFile,
   isImageMime,
   MAX_ATTACHMENTS,
+  shrinkImage,
   uploadFile,
   validateFile,
 } from '../attachments'
@@ -35,6 +36,7 @@ type Props = {
   /** Changing this focuses the textarea again (e.g. conversation id). */
   focusKey?: string
   className?: string
+  hideDisclaimer?: boolean
 }
 
 let attachmentSeq = 0
@@ -53,6 +55,7 @@ export function Composer({
   autoFocus = true,
   focusKey,
   className,
+  hideDisclaimer,
 }: Props) {
   const [value, setValue] = useState('')
   const ref = useRef<HTMLTextAreaElement>(null)
@@ -109,7 +112,8 @@ export function Composer({
       ...prev,
       { key, name: file.name, size: file.size, mime: file.type, status: 'uploading', previewUrl },
     ])
-    uploadFile(file, conversationId, controller.signal)
+    shrinkImage(file)
+      .then((small) => uploadFile(small, conversationId, controller.signal))
       .then((uploaded) => {
         controllers.current.delete(key)
         revoke(previewUrl)
@@ -313,7 +317,9 @@ export function Composer({
           )}
         </form>
       </BorderBeam>
-      <p className="mt-2 text-center text-xs text-muted-foreground">{S.composer.disclaimer}</p>
+      {!hideDisclaimer && (
+        <p className="mt-2 text-center text-xs text-muted-foreground">{S.composer.disclaimer}</p>
+      )}
     </div>
   )
 }

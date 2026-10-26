@@ -207,6 +207,16 @@ func (f *File) Ref() FileRef {
 	}
 }
 
+// FileListItem is a FileRef plus when the file was created, for the image/document libraries.
+type FileListItem struct {
+	FileRef
+	CreatedAt time.Time `json:"created_at"`
+}
+
+func (f *File) ListItem() FileListItem {
+	return FileListItem{FileRef: f.Ref(), CreatedAt: f.CreatedAt}
+}
+
 type AuditLog struct {
 	ID        bson.ObjectID `bson:"_id"`
 	ActorID   bson.ObjectID `bson:"actor_id"`

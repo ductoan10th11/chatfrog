@@ -2,6 +2,8 @@
  * All user-visible strings (Vietnamese). No i18n library in v1.
  * Technical terms (token, prompt, reasoning, ...) may stay in English.
  */
+const WEEKDAYS = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy']
+
 export const S = {
   app: {
     name: 'ChatFrog',
@@ -35,6 +37,7 @@ export const S = {
     openMenu: 'Mở menu',
     closeMenu: 'Đóng menu',
     sidebar: 'Thanh bên',
+    main: 'Điều hướng chính',
     newChat: 'Cuộc trò chuyện mới',
     search: 'Tìm kiếm hội thoại',
     searchPlaceholder: 'Tìm kiếm…',
@@ -50,8 +53,6 @@ export const S = {
     untitled: 'Hội thoại mới',
     userMenu: 'Menu người dùng',
     settings: 'Cài đặt',
-    admin: 'Quản trị',
-    theme: 'Giao diện',
   },
 
   conversation: {
@@ -77,22 +78,26 @@ export const S = {
     toggle: 'Đổi giao diện',
   },
 
+  library: {
+    images: 'Hình ảnh',
+    documents: 'Tài liệu',
+    imagesEmpty: 'Chưa có hình ảnh nào. Hãy nhờ ChatFrog vẽ hoặc đính kèm ảnh vào cuộc trò chuyện.',
+    documentsEmpty: 'Chưa có tài liệu nào. Đính kèm tài liệu vào cuộc trò chuyện để lưu ở đây.',
+    loadError: 'Không tải được danh sách.',
+    loadMore: 'Tải thêm',
+    loadingMore: 'Đang tải…',
+    download: 'Tải xuống',
+    close: 'Đóng',
+    generated: 'Do AI tạo',
+    uploaded: 'Đã tải lên',
+    truncated: 'Đã cắt bớt nội dung',
+    open: (name: string) => `Xem ảnh: ${name}`,
+  },
+
   welcome: {
-    title: 'Hôm nay mình giúp gì được cho bạn?',
-    subtitle: 'Hỏi bất cứ điều gì, nhờ viết code, hoặc mô tả một bức ảnh bạn muốn tạo.',
-    suggestions: [
-      {
-        label: 'Giải thích một khái niệm',
-        prompt: 'Giải thích ngắn gọn cho mình về điện toán lượng tử.',
-      },
-      {
-        label: 'Viết code mẫu',
-        prompt: 'Viết code TypeScript debounce hàm kèm bảng so sánh với throttle.',
-      },
-      { label: 'Vẽ một bức ảnh', prompt: 'Vẽ ảnh một chú ếch xanh ngồi trên lá sen dưới mưa nhẹ.' },
-      { label: 'Chỉnh sửa ảnh', prompt: 'Sửa bức ảnh vừa rồi, đổi nền thành hoàng hôn.' },
-    ],
-    suggestionsLabel: 'Gợi ý',
+    greeting: (name: string, now: Date = new Date()) =>
+      `Chào ${name}, ${WEEKDAYS[now.getDay()]} vui vẻ`,
+    subtitle: 'Op op, op',
   },
 
   composer: {
@@ -188,8 +193,6 @@ export const S = {
   },
 
   admin: {
-    title: 'Quản trị',
-    forbidden: 'Chỉ quản trị viên mới xem được trang này.',
     tabs: { users: 'Người dùng', stats: 'Thống kê', system: 'Hệ thống' },
     users: {
       searchLabel: 'Tìm người dùng',

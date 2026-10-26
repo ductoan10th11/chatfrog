@@ -67,9 +67,16 @@ func TestStreamChatOllamaReasoningAndTools(t *testing.T) {
 
 	llm := NewLLM(srv.URL, "k", "m")
 	var deltas []Delta
-	res, err := llm.StreamChat(context.Background(), ChatRequest{ReasoningEffort: "low"}, func(d Delta) { deltas = append(deltas, d) })
+	var announced []string
+	res, err := llm.StreamChat(context.Background(), ChatRequest{
+		ReasoningEffort: "low",
+		OnToolCall:      func(name string) { announced = append(announced, name) },
+	}, func(d Delta) { deltas = append(deltas, d) })
 	if err != nil {
 		t.Fatal(err)
+	}
+	if len(announced) != 1 || announced[0] != "generate_image" {
+		t.Errorf("OnToolCall = %v, want one call announced once", announced)
 	}
 	if res.Reasoning != "Thinking" || res.Content != "Mình sẽ vẽ." {
 		t.Errorf("reasoning=%q content=%q", res.Reasoning, res.Content)

@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { ErrorState } from '@/components/ErrorState'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { ME_KEY, useMe } from '@/features/auth/useMe'
 import { errorMessage } from '@/lib/api'
@@ -22,33 +23,30 @@ const THEMES: { value: Theme; label: string; icon: typeof Sun }[] = [
   { value: 'system', label: S.theme.system, icon: Monitor },
 ]
 
-export function SettingsPage() {
+export function SettingsPanel() {
   const me = useMe()
-  return (
-    <div className="mx-auto w-full max-w-3xl p-4 sm:p-6">
-      <h2 className="text-xl font-semibold">{S.settings.title}</h2>
-      {me.isPending ? (
-        <div className="mt-6 space-y-4" aria-busy="true">
-          <Skeleton className="h-40 w-full" />
-          <Skeleton className="h-10 w-72" />
-        </div>
-      ) : me.isError || !me.data ? (
-        <ErrorState message={S.settings.loadError} onRetry={() => me.refetch()} />
-      ) : (
-        <SettingsForm saved={me.data.settings} />
-      )}
-    </div>
-  )
+  if (me.isPending)
+    return (
+      <div className="space-y-4" aria-busy="true">
+        <Skeleton className="h-40 w-full" />
+        <Skeleton className="h-10 w-72" />
+      </div>
+    )
+  if (me.isError || !me.data)
+    return <ErrorState message={S.settings.loadError} onRetry={() => me.refetch()} />
+  return <SettingsForm saved={me.data.settings} />
 }
 
 function SettingsForm({ saved }: { saved: UserSettings }) {
   const qc = useQueryClient()
+  const theme = useThemeStore((s) => s.theme)
   const setTheme = useThemeStore((s) => s.setTheme)
   const instructionsId = useId()
   const hintId = useId()
   // Only the fields the user touched; everything else comes from the saved settings.
   const [edits, setEdits] = useState<Partial<UserSettings>>({})
-  const current: UserSettings = { ...saved, ...edits }
+  // The theme in effect (store) wins over the saved one, which may be stale or still the default.
+  const current: UserSettings = { ...saved, ...edits, theme }
   const dirty =
     current.custom_instructions !== saved.custom_instructions || current.theme !== saved.theme
 
@@ -63,21 +61,19 @@ function SettingsForm({ saved }: { saved: UserSettings }) {
     onError: (e) => toast.error(errorMessage(e)),
   })
 
-  const chooseTheme = (theme: Theme) => {
-    setEdits((e) => ({ ...e, theme }))
-    setTheme(theme) // apply immediately; persisted on save
-  }
+  // Applied immediately; persisted on save.
+  const chooseTheme = (next: Theme) => setTheme(next)
 
   return (
     <form
-      className="mt-6 space-y-8"
+      className="space-y-8"
       onSubmit={(e) => {
         e.preventDefault()
         if (dirty && !save.isPending) save.mutate(current)
       }}
     >
       <section className="space-y-2">
-        <label htmlFor={instructionsId} className="text-sm font-medium">
+        <label htmlFor={instructionsId} className="block text-sm font-medium">
           {S.settings.instructionsLabel}
         </label>
         <Textarea
@@ -106,34 +102,18 @@ function SettingsForm({ saved }: { saved: UserSettings }) {
       </section>
 
       <section className="space-y-2">
-        <span id="settings-theme-label" className="text-sm font-medium">
+        <span id="settings-theme-label" className="block text-sm font-medium">
           {S.settings.themeLabel}
         </span>
-        <div
-          role="radiogroup"
-          aria-labelledby="settings-theme-label"
-          className="inline-flex w-full max-w-md rounded-lg bg-muted p-1 sm:w-auto"
-        >
-          {THEMES.map(({ value, label, icon: Icon }) => {
-            const active = current.theme === value
-            return (
-              <button
-                key={value}
-                type="button"
-                role="radio"
-                aria-checked={active}
-                onClick={() => chooseTheme(value)}
-                className={cn(
-                  'flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring sm:flex-none',
-                  active ? 'bg-primary text-primary-foreground shadow-sm' : 'hover:text-foreground',
-                )}
-              >
-                <Icon className="size-4" aria-hidden />
-                {label}
-              </button>
-            )
-          })}
-        </div>
+        <Tabs value={current.theme} onValueChange={(v) => chooseTheme(v as Theme)}>
+          <TabsList aria-labelledby="settings-theme-label">
+            {THEMES.map(({ value, label, icon: Icon }) => (
+              <TabsTrigger key={value} value={value} aria-label={label} title={label}>
+                <Icon aria-hidden />
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
         <p className="text-xs text-muted-foreground">{S.settings.themeHint}</p>
       </section>
 

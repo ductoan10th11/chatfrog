@@ -139,6 +139,32 @@
   }
 }
 
+/* "Thinking" / "writing" label: a bright band sweeps across muted text. */
+@layer utilities {
+  .shimmer-text {
+    color: var(--muted-foreground);
+    background-image: linear-gradient(
+      100deg,
+      var(--muted-foreground) 35%,
+      var(--foreground) 50%,
+      var(--muted-foreground) 65%
+    );
+    background-size: 250% 100%;
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer-sweep 1.8s linear infinite;
+  }
+}
+@keyframes shimmer-sweep {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

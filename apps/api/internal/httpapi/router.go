@@ -67,6 +67,7 @@ func (s *Server) Router() http.Handler {
 			r.Post("/api/messages/{id}/regenerate", s.regenerate)
 			r.Post("/api/messages/{id}/edit", s.editMessage)
 
+			r.Get("/api/files", s.listFiles)
 			r.Post("/api/files", s.uploadFile)
 			r.Get("/api/files/{id}", s.serveFile)
 			r.Get("/api/files/{id}/thumb", s.serveThumb)

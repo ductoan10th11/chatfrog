@@ -1,18 +1,14 @@
-import { Link } from 'react-router'
-import { ChevronsUpDown, LogOut, Settings, ShieldCheck } from 'lucide-react'
+import { ChevronsUpDown, LogOut, Settings } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { useSettingsModal } from '@/features/settings/modalStore'
 import { S } from '@/lib/strings'
-import { useThemeStore, useTheme, type Theme } from '@/lib/theme'
 import { useLogout, useMe } from './useMe'
 
 const initials = (name: string) =>
@@ -25,8 +21,7 @@ const initials = (name: string) =>
 
 export function UserMenu({ onNavigate }: { onNavigate?: () => void }) {
   const me = useMe().data
-  const theme = useTheme()
-  const setTheme = useThemeStore((s) => s.setTheme)
+  const openSettings = useSettingsModal((s) => s.setOpen)
   const logout = useLogout()
   if (!me) return null
 
@@ -54,27 +49,14 @@ export function UserMenu({ onNavigate }: { onNavigate?: () => void }) {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" side="top" className="w-64">
-        <DropdownMenuItem asChild>
-          <Link to="/settings" onClick={onNavigate}>
-            <Settings /> {S.nav.settings}
-          </Link>
+        <DropdownMenuItem
+          onSelect={() => {
+            onNavigate?.() // close the mobile drawer
+            openSettings(true)
+          }}
+        >
+          <Settings /> {S.nav.settings}
         </DropdownMenuItem>
-        {me.role === 'admin' && (
-          <DropdownMenuItem asChild>
-            <Link to="/admin" onClick={onNavigate}>
-              <ShieldCheck /> {S.nav.admin}
-            </Link>
-          </DropdownMenuItem>
-        )}
-        <DropdownMenuSeparator />
-        <DropdownMenuLabel className="text-xs text-muted-foreground">
-          {S.nav.theme}
-        </DropdownMenuLabel>
-        <DropdownMenuRadioGroup value={theme} onValueChange={(v) => setTheme(v as Theme)}>
-          <DropdownMenuRadioItem value="light">{S.theme.light}</DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value="dark">{S.theme.dark}</DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value="system">{S.theme.system}</DropdownMenuRadioItem>
-        </DropdownMenuRadioGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => void logout()}>
           <LogOut /> {S.auth.logout}

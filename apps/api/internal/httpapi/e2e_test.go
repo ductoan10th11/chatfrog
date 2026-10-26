@@ -242,6 +242,15 @@ func TestE2E(t *testing.T) {
 	}
 	e.json(http.MethodDelete, "/api/files/"+docRef.ID, nil, http.StatusConflict, nil)
 
+	// The libraries list the uploads once they belong to a conversation.
+	var imgs, docs page[store.FileListItem]
+	e.json(http.MethodGet, "/api/files?type=image", nil, http.StatusOK, &imgs)
+	e.json(http.MethodGet, "/api/files?type=document", nil, http.StatusOK, &docs)
+	if !hasFile(imgs.Items, imgRef.ID) || hasFile(docs.Items, imgRef.ID) || !hasFile(docs.Items, docRef.ID) {
+		t.Errorf("file libraries wrong: images=%v documents=%v", imgs.Items, docs.Items)
+	}
+	e.json(http.MethodGet, "/api/files?type=other", nil, http.StatusBadRequest, nil)
+
 	// 4. Regenerate the last answer, then edit the first message.
 	var msgs page[store.MessageJSON]
 	e.json(http.MethodGet, "/api/conversations/"+convID+"/messages?limit=50", nil, http.StatusOK, &msgs)
@@ -317,6 +326,15 @@ func TestE2E(t *testing.T) {
 	e.json(http.MethodDelete, "/api/conversations/"+convID, nil, http.StatusNoContent, nil)
 	e.json(http.MethodGet, "/api/conversations/"+convID, nil, http.StatusNotFound, nil)
 	e.json(http.MethodGet, toolDone.Result.File.URL, nil, http.StatusNotFound, nil)
+}
+
+func hasFile(items []store.FileListItem, id string) bool {
+	for _, f := range items {
+		if f.ID == id {
+			return true
+		}
+	}
+	return false
 }
 
 func (e *e2e) upload(name string, data []byte, convID string, out *store.FileRef) {

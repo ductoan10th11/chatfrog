@@ -260,6 +260,33 @@ func (s *Store) GetFile(ctx context.Context, userID, id bson.ObjectID) (*File, e
 	return &f, nil
 }
 
+// ListFiles returns the user's files that belong to a conversation, newest first: images when
+// `images` is set, every other file (documents) otherwise.
+func (s *Store) ListFiles(ctx context.Context, userID bson.ObjectID, images bool, offset, limit int) ([]File, bool, error) {
+	imageMimes := bson.A{"image/png", "image/jpeg", "image/webp"}
+	mime := bson.M{"$nin": imageMimes}
+	if images {
+		mime = bson.M{"$in": imageMimes}
+	}
+	filter := bson.M{"user_id": userID, "conversation_id": bson.M{"$ne": nil}, "mime": mime}
+	opts := options.Find().
+		SetSort(bson.D{{Key: "created_at", Value: -1}, {Key: "_id", Value: -1}}).
+		SetSkip(int64(offset)).SetLimit(int64(limit + 1))
+	cur, err := s.files.Find(ctx, filter, opts)
+	if err != nil {
+		return nil, false, err
+	}
+	var out []File
+	if err := cur.All(ctx, &out); err != nil {
+		return nil, false, err
+	}
+	more := len(out) > limit
+	if more {
+		out = out[:limit]
+	}
+	return out, more, nil
+}
+
 func (s *Store) GetFiles(ctx context.Context, userID bson.ObjectID, ids []bson.ObjectID) ([]File, error) {
 	if len(ids) == 0 {
 		return nil, nil

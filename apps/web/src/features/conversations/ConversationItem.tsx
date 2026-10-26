@@ -57,7 +57,7 @@ export function ConversationItem({ conversation, active, onNavigate, onDeleted }
     <div
       className={cn(
         'group relative flex items-center rounded-lg transition-colors',
-        active ? 'bg-primary-soft' : 'hover:bg-muted',
+        active ? 'bg-primary/25 font-medium' : 'hover:bg-primary/15',
       )}
     >
       <Link

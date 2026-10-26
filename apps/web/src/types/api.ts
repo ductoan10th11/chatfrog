@@ -36,6 +36,7 @@ export type FileRef = {
   height?: number
   /** "/api/files/<id>" */
   url: string
+  created_at?: string
   /** Documents: extracted text was cut at DOC_MAX_CHARS. */
   truncated?: boolean
 }

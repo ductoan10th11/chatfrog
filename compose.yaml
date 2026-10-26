@@ -10,6 +10,8 @@ services:
       dockerfile: Containerfile
     image: localhost/chatfrog-api:latest
     restart: unless-stopped
+    # Factory (LLM) chỉ lắng nghe 127.0.0.1:9220 trên host: chuyển tiếp cổng đó vào container.
+    network_mode: "pasta:-T,9220"
     env_file: .env
     environment:
       HTTP_ADDR: ":9260"

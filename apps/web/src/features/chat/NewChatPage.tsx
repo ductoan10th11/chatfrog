@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
-import { Orb } from '@/components/Orb'
-import { Button } from '@/components/ui/button'
+import { motion, useReducedMotion } from 'motion/react'
+import { Logo } from '@/components/Logo'
+import { useMe } from '@/features/auth/useMe'
 import { S } from '@/lib/strings'
 import { Composer } from './components/Composer'
 import { NEW_CONVERSATION } from './generation'
@@ -10,10 +11,14 @@ import { useGenerate } from './useGenerate'
 /**
  * `/`: welcome screen. Sending posts to `/api/conversations/new/messages`, then the router
  * moves to `/c/:id` as soon as the server reports the new conversation; the stream keeps going.
+ * The composer sits mid-screen until a message is sent, then drops to the bottom like in a chat.
  */
 export function NewChatPage() {
   const live = useLiveGeneration(NEW_CONVERSATION)
   const generate = useGenerate()
+  // Vietnamese given name comes last: "Hoàng Đức Toàn" -> "Toàn".
+  const name = useMe().data?.name.trim().split(/\s+/).pop()
+  const reduced = useReducedMotion()
   const busy = !!live
 
   // Warm up the conversation view so the move to /c/:id is instant once the stream starts.
@@ -22,37 +27,24 @@ export function NewChatPage() {
   }, [])
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex min-h-0 flex-1 scrollbar-thin flex-col items-center justify-center gap-6 overflow-y-auto px-4 py-8 text-center">
-        <Orb state="weaving" size={64} displaySize={112} />
-        <div className="space-y-2">
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{S.welcome.title}</h1>
+    <div className={`flex h-full flex-col ${busy ? 'justify-end' : 'justify-center'}`}>
+      {!busy && (
+        <div className="space-y-2 px-4 pb-6 text-center">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            {S.welcome.greeting(name ?? 'bạn')}{' '}
+            <Logo className="inline-block size-8 align-[-0.2em]" />
+          </h1>
           <p className="mx-auto max-w-md text-sm text-muted-foreground">{S.welcome.subtitle}</p>
         </div>
-        <ul
-          aria-label={S.welcome.suggestionsLabel}
-          className="flex max-w-xl flex-wrap justify-center gap-2"
-        >
-          {S.welcome.suggestions.map((s) => (
-            <li key={s.label}>
-              <Button
-                variant="outline"
-                size="lg"
-                className="h-9 rounded-full bg-surface px-4"
-                disabled={busy}
-                onClick={() => void generate.send(NEW_CONVERSATION, s.prompt)}
-              >
-                {s.label}
-              </Button>
-            </li>
-          ))}
-        </ul>
-      </div>
-      <Composer
-        busy={busy}
-        onSend={(text, attachments) => generate.send(NEW_CONVERSATION, text, attachments)}
-        onStop={() => generate.stop(NEW_CONVERSATION)}
-      />
+      )}
+      <motion.div layout={!reduced} transition={{ type: 'spring', bounce: 0.1, duration: 0.4 }}>
+        <Composer
+          busy={busy}
+          hideDisclaimer={!busy}
+          onSend={(text, attachments) => generate.send(NEW_CONVERSATION, text, attachments)}
+          onStop={() => generate.stop(NEW_CONVERSATION)}
+        />
+      </motion.div>
     </div>
   )
 }

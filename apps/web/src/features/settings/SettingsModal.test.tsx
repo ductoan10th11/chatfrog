@@ -5,16 +5,18 @@ import { S } from '@/lib/strings'
 import { useThemeStore } from '@/lib/theme'
 import { installMockApi } from '@/test/mockServer'
 import { renderApp } from '@/test/renderApp'
+import { openSettings } from '@/test/openSettings'
 import { ME_KEY } from '@/features/auth/useMe'
 
 installMockApi()
 
 afterEach(() => useThemeStore.getState().setTheme('system'))
 
-describe('settings page', () => {
+describe('settings modal', () => {
   it('saves custom instructions and theme, then updates the cached user', async () => {
     const user = userEvent.setup()
-    const { client } = renderApp('/settings')
+    const { client } = renderApp()
+    await openSettings(user)
     const box = await screen.findByLabelText(S.settings.instructionsLabel)
     const save = screen.getByRole('button', { name: S.app.save })
     expect(save).toBeDisabled()
@@ -22,7 +24,7 @@ describe('settings page', () => {
 
     await user.type(box, 'Trả lời ngắn')
     expect(screen.getByText(S.settings.counter(12, 2000))).toBeInTheDocument()
-    await user.click(screen.getByRole('radio', { name: S.theme.dark }))
+    await user.click(screen.getByRole('tab', { name: S.theme.dark }))
     expect(useThemeStore.getState().theme).toBe('dark')
     expect(save).toBeEnabled()
 

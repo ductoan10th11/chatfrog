@@ -1,10 +1,8 @@
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router'
 import { FullScreenLoader } from '@/components/FullScreenLoader'
-import { AdminPage } from '@/features/admin/AdminPage'
 import { AuthGuard, GuestGuard } from '@/features/auth/AuthGuard'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { PendingPage } from '@/features/auth/PendingPage'
-import { SettingsPage } from '@/features/settings/SettingsPage'
 import { AppShell } from './AppShell'
 
 export const routes: RouteObject[] = [
@@ -31,13 +29,23 @@ export const routes: RouteObject[] = [
                 }),
               },
               {
+                path: '/images',
+                lazy: async () => ({
+                  Component: (await import('@/features/library/ImagesPage')).ImagesPage,
+                }),
+              },
+              {
+                path: '/documents',
+                lazy: async () => ({
+                  Component: (await import('@/features/library/DocumentsPage')).DocumentsPage,
+                }),
+              },
+              {
                 path: '/c/:id',
                 lazy: async () => ({
                   Component: (await import('@/features/chat/ChatPage')).ChatPage,
                 }),
               },
-              { path: '/settings', element: <SettingsPage /> },
-              { path: '/admin', element: <AdminPage /> },
             ],
           },
         ],

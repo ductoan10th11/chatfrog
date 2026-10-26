@@ -147,6 +147,7 @@ Mỗi hội thoại chỉ có một generation chạy tại một thời điểm
 | Method | Path | Body | Response |
 |---|---|---|---|
 | POST | `/api/files` | multipart: `file`, `conversation_id?` | `201 FileRef` |
+| GET | `/api/files` | query: `type=image\|document` (bắt buộc), `limit`, `cursor` | `Page<FileRef & {created_at}>`, mới nhất trước; chỉ file đã gắn vào hội thoại |
 | GET | `/api/files/:id` | — | Nội dung file (chỉ chủ sở hữu). Ảnh trả `inline`, file khác trả `attachment` |
 | GET | `/api/files/:id/thumb` | — | Ảnh JPEG, cạnh dài 384px (chỉ áp dụng cho ảnh) |
 | DELETE | `/api/files/:id` | — | `204`; trả `409` nếu file đã được dùng trong một tin nhắn |

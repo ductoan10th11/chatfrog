@@ -24,7 +24,7 @@ describe('chat flow (against the mock API)', () => {
   it('sends from / , navigates to /c/:id without losing the stream, and shows the answer', async () => {
     const user = userEvent.setup()
     const { router } = renderApp('/')
-    expect(await screen.findByRole('heading', { name: S.welcome.title })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /^Chào .+, .+ vui vẻ/ })).toBeInTheDocument()
 
     await sendFromWelcome(user, 'Xin chào')
 

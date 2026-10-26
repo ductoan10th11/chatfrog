@@ -96,6 +96,10 @@ func (s *Service) Run(ctx context.Context, t *Turn, emit Emitter) {
 
 	g := &generation{s: s, t: t, emit: emit, msg: t.Assistant, cur: -1}
 	status, msgErr := g.run(ctx)
+	if !g.firstDelta.IsZero() {
+		slog.InfoContext(ctx, "generation timing", "first_token_ms", g.firstDelta.Sub(start).Milliseconds(),
+			"total_ms", time.Since(start).Milliseconds(), "status", status)
+	}
 
 	msg := g.msg
 	if status != store.MsgComplete {
@@ -136,6 +140,9 @@ type generation struct {
 
 	cur        int // index of the part receiving deltas, -1 when none
 	thinkStart time.Time
+	firstDelta time.Time // when the first reasoning/text/tool event went out
+	// early holds the part index of each tool call announced while its arguments still stream.
+	early []int
 	// buffer, when set, collects the content deltas instead of streaming them.
 	buffer *strings.Builder
 }
@@ -182,8 +189,12 @@ func (g *generation) run(ctx context.Context) (string, *store.MessageError) {
 		res.ToolCalls[i].Type = "function"
 	}
 	msgs = append(msgs, provider.ChatMessage{Role: "assistant", Content: res.Content, ToolCalls: res.ToolCalls})
-	for _, tc := range res.ToolCalls {
-		result := g.runTool(ctx, tc)
+	for i, tc := range res.ToolCalls {
+		part := -1
+		if i < len(g.early) {
+			part = g.early[i]
+		}
+		result := g.runTool(ctx, tc, part)
 		msgs = append(msgs, provider.ChatMessage{Role: "tool", ToolCallID: tc.ID, Content: result})
 	}
 	if ctx.Err() != nil {
@@ -255,7 +266,9 @@ func (g *generation) complete(ctx context.Context, msgs []provider.ChatMessage, 
 	req := provider.ChatRequest{Messages: msgs, MaxTokens: maxTokens, ReasoningEffort: effort}
 	if allowTools {
 		req.Tools = []provider.Tool{tools.GenerateImageDef}
+		req.OnToolCall = g.announceTool
 	}
+	g.early = g.early[:0]
 	res, err := g.s.llm.StreamChat(ctx, req, g.onDelta)
 	g.closeReasoning()
 	g.cur = -1
@@ -267,6 +280,9 @@ func (g *generation) complete(ctx context.Context, msgs []provider.ChatMessage, 
 }
 
 func (g *generation) onDelta(d provider.Delta) {
+	if g.firstDelta.IsZero() && (d.Reasoning != "" || d.Content != "") {
+		g.firstDelta = time.Now()
+	}
 	if g.buffer != nil {
 		g.buffer.WriteString(d.Content)
 		return
@@ -310,19 +326,43 @@ func (g *generation) closeReasoning() {
 	g.cur = -1
 }
 
+// announceTool shows the image card as soon as the model starts calling the tool: the English
+// prompt that follows streams for a few seconds, during which nothing else would appear.
+func (g *generation) announceTool(name string) {
+	if name != tools.GenerateImageName || g.buffer != nil {
+		return
+	}
+	g.closeReasoning()
+	g.cur = -1
+	idx := len(g.msg.Parts)
+	g.msg.Parts = append(g.msg.Parts, store.Part{
+		Type: store.PartToolCall, Name: tools.GenerateImageName, Args: &store.ToolArgs{}, Status: store.ToolQueued,
+	})
+	g.early = append(g.early, idx)
+	g.emit("tool.start", map[string]any{"index": idx, "id": "", "name": tools.GenerateImageName, "args": store.ToolArgs{}})
+}
+
 // runTool executes one tool call and returns the tool message content for the LLM.
-func (g *generation) runTool(ctx context.Context, tc provider.ToolCall) string {
+// part is the index of the card announced early for this call, or -1.
+func (g *generation) runTool(ctx context.Context, tc provider.ToolCall, part int) string {
 	if tc.Function.Name != tools.GenerateImageName {
 		return fmt.Sprintf("Lỗi: không có tool %q.", tc.Function.Name)
 	}
 	args, err := tools.ParseArgs(tc.Function.Arguments)
 	if err != nil {
+		if part >= 0 {
+			g.msg.Parts[part].ID, g.msg.Parts[part].Status, g.msg.Parts[part].Error = tc.ID, store.ToolError, "Tham số không hợp lệ"
+			g.emit("tool.error", map[string]any{"index": part, "id": tc.ID, "error": "Tham số không hợp lệ"})
+		}
 		return "Lỗi khi gọi generate_image: " + err.Error()
 	}
-	idx := len(g.msg.Parts)
-	g.msg.Parts = append(g.msg.Parts, store.Part{
-		Type: store.PartToolCall, ID: tc.ID, Name: tools.GenerateImageName, Args: &args, Status: store.ToolQueued,
-	})
+	idx := part
+	if idx < 0 {
+		idx = len(g.msg.Parts)
+		g.msg.Parts = append(g.msg.Parts, store.Part{Type: store.PartToolCall, Name: tools.GenerateImageName})
+	}
+	g.msg.Parts[idx].ID, g.msg.Parts[idx].Args, g.msg.Parts[idx].Status = tc.ID, &args, store.ToolQueued
+	// With an early card this replaces it (same index) with the real arguments.
 	g.emit("tool.start", map[string]any{"index": idx, "id": tc.ID, "name": tools.GenerateImageName, "args": args})
 	fail := func(msg string) string {
 		g.msg.Parts[idx].Status, g.msg.Parts[idx].Error = store.ToolError, msg

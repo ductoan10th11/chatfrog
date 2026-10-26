@@ -434,6 +434,19 @@ export const handlers = [
     return HttpResponse.json(ref, { status: 201 })
   }),
 
+  http.get('/api/files', async ({ request }) => {
+    const denied = guard()
+    if (denied) return denied
+    await latency()
+    const url = new URL(request.url)
+    const type = url.searchParams.get('type')
+    const list = Object.values(db().files)
+      .filter((f) => (type === 'image' ? f.mime.startsWith('image/') : !f.mime.startsWith('image/')))
+      .map(({ prompt: _prompt, ...ref }) => ref)
+      .reverse()
+    return HttpResponse.json(paginate(list, intParam(url, 'limit', 30), url.searchParams.get('cursor')))
+  }),
+
   http.get('/api/files/:id/thumb', ({ params }) => serveFile(params.id as string)),
   http.get('/api/files/:id', ({ params }) => serveFile(params.id as string)),
 
@@ -552,6 +565,11 @@ function serveFile(id: string) {
   if (meta.kind === 'generated') {
     return new HttpResponse(generatedImageSvg(id, meta.width, meta.height), {
       headers: { ...headers, 'Content-Type': 'image/svg+xml' },
+    })
+  }
+  if (meta.mime.startsWith('text/')) {
+    return new HttpResponse(`Nội dung mẫu của ${meta.name}`, {
+      headers: { ...headers, 'Content-Type': `${meta.mime}; charset=utf-8` },
     })
   }
   // Upload whose bytes were lost on page reload.

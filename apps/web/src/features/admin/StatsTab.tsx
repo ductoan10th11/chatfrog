@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { ErrorState } from '@/components/ErrorState'
-import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { S } from '@/lib/strings'
 import type { Stats } from '@/types/api'
 import { formatBytes, formatLatency, formatNumber, rangeFor, shortDate } from './format'
@@ -18,20 +18,15 @@ export function StatsTab() {
 
   return (
     <div className="space-y-6">
-      <div role="group" aria-label={T.range} className="flex flex-wrap gap-1.5">
-        {PRESETS.map((n) => (
-          <Button
-            key={n}
-            type="button"
-            size="sm"
-            variant={days === n ? 'default' : 'outline'}
-            aria-pressed={days === n}
-            onClick={() => setDays(n)}
-          >
-            {T.lastDays(n)}
-          </Button>
-        ))}
-      </div>
+      <Tabs value={String(days)} onValueChange={(v) => setDays(Number(v))}>
+        <TabsList aria-label={T.range}>
+          {PRESETS.map((n) => (
+            <TabsTrigger key={n} value={String(n)}>
+              {T.lastDays(n)}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
 
       {stats.isPending ? (
         <div className="space-y-4" aria-busy="true">

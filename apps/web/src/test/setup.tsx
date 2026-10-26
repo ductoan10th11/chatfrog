@@ -1,7 +1,11 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
+import { useSettingsModal } from '@/features/settings/modalStore'
 
-afterEach(() => cleanup())
+afterEach(() => {
+  cleanup()
+  useSettingsModal.setState({ open: false })
+})
 
 // jsdom gaps that Radix UI / our components rely on.
 class NoopObserver {
@@ -32,7 +36,3 @@ if (typeof window !== 'undefined') {
   Element.prototype.setPointerCapture ??= () => {}
 }
 
-// The orb draws on a canvas, which jsdom does not implement.
-vi.mock('thinking-orbs', () => ({
-  ThinkingOrb: ({ state }: { state: string }) => <span data-testid="orb" data-state={state} />,
-}))
