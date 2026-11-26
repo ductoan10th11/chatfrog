@@ -95,14 +95,18 @@ export type Stats = {
 }
 
 type ServiceHealth = {
+  key: ModelKey
+  profile: string
   ok: boolean
   latency_ms: number | null
   model: string
   last_error: string | null
   checked_at: string
+  enabled: boolean
 }
 
-export type Health = { llm: ServiceHealth; image: ServiceHealth; mongo: { ok: boolean } }
+export type Health = { llms: ServiceHealth[]; images: ServiceHealth[]; mongo: { ok: boolean } }
+export type ModelKey = `llm_${string}` | `image_${string}`
 
 export type ApiErrorBody = { error: { code: string; message: string } }
 

@@ -4,7 +4,7 @@ Phiên bản 0.1 · 2026-10-21 · Nguồn: [IDEA.md](IDEA.md) · API: [API.md](A
 
 ## 1. Tóm tắt
 
-ChatFrog là nền tảng chatbot AI tự host cho một nhóm nhỏ người dùng. Người dùng chat với LLM (Qwen3.5-4B, luôn bật thinking); LLM tự quyết định gọi tool `generate_image` để tạo hoặc chỉnh sửa ảnh (FLUX.2 klein 4B) khi cần, đồng thời giải thích ngắn gọn. Hỗ trợ đính kèm ảnh và tài liệu. Đăng nhập bằng Google, admin duyệt người dùng.
+ChatFrog là nền tảng chatbot AI tự host cho một nhóm nhỏ người dùng. Người dùng chat với LLM (Qwen3.6-35B-A3B, luôn bật thinking); LLM tự quyết định gọi tool `generate_image` để tạo hoặc chỉnh sửa ảnh (Qwen Image 2.1 INT8) khi cần, đồng thời giải thích ngắn gọn. Hỗ trợ đính kèm ảnh và tài liệu. Đăng nhập bằng Google, admin duyệt người dùng.
 
 ## 2. Phạm vi
 

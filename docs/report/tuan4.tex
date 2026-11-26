@@ -1,0 +1,271 @@
+\RequirePackage{fix-cm}
+\RequirePackage{iftex}
+\documentclass[
+a4paper,
+fontsize=12pt,
+DIV=calc,
+oneside,
+numbers=enddot,
+captions=tableheading,
+bibliography=totoc,
+]{scrreprt}
+
+\newcommand{\tenkhoa}{KHOA CÔNG NGHỆ THÔNG TIN}
+\newcommand{\tenhocphan}{Điện Toán Đám Mây}
+\newcommand{\tengvhd}{TS.Nguyễn Đức Bình}
+\newcommand{\tenlop}{CNTT K22H}
+\newcommand{\tenLLM}{Qwen 3.6}
+\newcommand{\tenImage}{Qwen Image 2.1}
+\newcommand{\ipvps}{203.113.135.195}
+
+\usepackage[top=2.5cm, bottom=2.5cm, left=3cm, right=2cm]{geometry}
+\ifPDFTeX
+\usepackage[T5]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{tgtermes}
+\usepackage[scale=0.95]{tgcursor}
+\DeclareUnicodeCharacter{2192}{\ensuremath{\rightarrow}}
+\else
+\usepackage{fontspec}
+\IfFontExistsTF{Times New Roman}{%
+	\setmainfont{Times New Roman}%
+}{%
+	\setmainfont{texgyretermes}[
+	Extension=.otf,
+	UprightFont=*-regular,
+	BoldFont=*-bold,
+	ItalicFont=*-italic,
+	BoldItalicFont=*-bolditalic]%
+}
+\IfFontExistsTF{DejaVu Sans Mono}{%
+	\setmonofont{DejaVu Sans Mono}[Scale=0.85]%
+}{%
+	\setmonofont{texgyrecursor}[
+	Extension=.otf,
+	UprightFont=*-regular,
+	BoldFont=*-bold,
+	ItalicFont=*-italic,
+	BoldItalicFont=*-bolditalic]%
+}
+\fi
+\usepackage{setspace}
+\setstretch{1.1}
+\setlength{\parskip}{6pt}
+\setlength{\parindent}{1cm}
+\hyphenpenalty=10000
+\exhyphenpenalty=10000
+\emergencystretch=3em
+
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{fvextra}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, fit, backgrounds}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+
+\setlist{itemsep=1pt, topsep=3pt}
+\renewcommand{\arraystretch}{1.25}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\urlstyle{tt}
+
+\setkomafont{disposition}{\normalfont\bfseries}
+\RedeclareSectionCommand[beforeskip=0pt, afterskip=1.2\baselineskip, font=\large]{chapter}
+\RedeclareSectionCommand[font=\normalsize]{section}
+\RedeclareSectionCommand[font=\normalsize]{subsection}
+\renewcommand*{\chapterformat}{CHƯƠNG~\thechapter.\enskip}
+\renewcommand*{\chapterlinesformat}[3]{\centering #2#3\par}
+\setcounter{tocdepth}{\subsectiontocdepth}
+\setkomafont{chapterentry}{\bfseries}
+
+\AtBeginDocument{%
+	\renewcommand{\contentsname}{MỤC LỤC}%
+	\renewcommand{\bibname}{TÀI LIỆU THAM KHẢO}%
+	\renewcommand{\chaptername}{Chương}%
+	\renewcommand{\figurename}{Hình}%
+	\renewcommand{\tablename}{Bảng}%
+}
+\renewcommand*{\figureformat}{\figurename~\thefigure}
+\renewcommand*{\tableformat}{\tablename~\thetable}
+\renewcommand*{\captionformat}{.~}
+\setkomafont{captionlabel}{\bfseries}
+\setcapindent{0pt}
+\pagestyle{plain}
+
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+
+\newcommand{\timanh}[3]{%
+	\IfFileExists{images/#1}{#2{images/#1}}{%
+		\IfFileExists{#1}{#2{#1}}{#3}}}
+
+\newcommand{\anhchup}[3]{%
+	\begin{figure}[H]
+		\centering
+		\timanh{#1}{\includegraphics[width=0.8\linewidth, height=0.2\textheight, keepaspectratio]}{%
+			\fbox{\parbox[c][3.2cm][c]{0.8\linewidth}{\centering\small\color{gray}%
+					[Chèn ảnh: \texttt{images/\detokenize{#1}}]}}}
+		\caption{#2}\label{#3}
+\end{figure}}
+
+\tikzset{
+	khoi/.style={draw, rounded corners=2pt, align=center, font=\small,
+		minimum height=0.9cm, inner sep=4pt, fill=white},
+	khoiCloud/.style={khoi, fill=green!8},
+	khoiNgoai/.style={khoi, fill=gray!12},
+	muiten/.style={-{Stealth[length=2.2mm]}, thick},
+	nhan/.style={font=\scriptsize, fill=white, inner sep=1pt},
+}
+
+\hypersetup{
+	pdftitle={Báo cáo tuần 4: ChatFrog},
+	pdfauthor={Hoàng Đức Toàn, Hoàng Ngọc Tú},
+}
+
+\begin{document}
+
+	\begin{titlepage}
+		\begin{tikzpicture}[remember picture, overlay]
+			\draw[line width=1.6pt]
+			([xshift=2.3cm, yshift=-1.8cm]current page.north west) rectangle
+			([xshift=-1.5cm, yshift=1.8cm]current page.south east);
+			\draw[line width=0.5pt]
+			([xshift=2.45cm, yshift=-1.95cm]current page.north west) rectangle
+			([xshift=-1.65cm, yshift=1.95cm]current page.south east);
+		\end{tikzpicture}
+		\centering
+		\setstretch{1.15}
+		{\large\bfseries TRƯỜNG ĐẠI HỌC CÔNG NGHỆ THÔNG TIN\\VÀ TRUYỀN THÔNG\par}
+		{\large\bfseries \tenkhoa\par}
+		\rule{5cm}{0.6pt}\par
+		\vspace{0.6cm}
+		\timanh{logo.png}{\includegraphics[height=3cm]}{%
+			\fbox{\parbox[c][2.8cm][c]{2.8cm}{\centering\small\color{gray}Logo ICTU}}}\par
+		\vspace{0.8cm}
+		{\Large\bfseries BÁO CÁO TUẦN 4 -- MINI PROJECT\par}
+		{\large Học phần: \tenhocphan\par}
+		\vspace{0.8cm}
+		{\large\bfseries ĐỀ TÀI:\par}
+		\begin{minipage}{0.9\linewidth}
+			\centering\large\bfseries
+			XÂY DỰNG VÀ TRIỂN KHAI NỀN TẢNG CHATBOT AI CHATFROG HỖ TRỢ HỘI THOẠI THÔNG MINH VÀ TẠO SINH HÌNH ẢNH, TÍCH HỢP QWEN LLM VÀ QWEN IMAGE GENERATION TRÊN MÁY CHỦ ẢO (VPS) ICTU
+		\end{minipage}\par
+		\vspace{0.2cm}
+		\begin{minipage}{0.85\linewidth}
+			\centering\normalsize\itshape
+			Sử dụng Namecheap Domain, Cloudflare DNSaaS, MongoDB Atlas DBaaS, Tailscale NaaS và GitHub SaaS
+		\end{minipage}\par
+		\vspace{0.6cm}
+		{\large\bfseries Nội dung báo cáo: Dịch vụ cloud được lựa chọn\par}
+		\vfill
+		\begin{tabular}{@{}ll@{}}
+			Sinh viên thực hiện:  & Hoàng Đức Toàn -- DTC235200752 \\
+			& Hoàng Ngọc Tú -- DTC235200787 \\
+			Lớp:                  & \tenlop \\
+			Giảng viên hướng dẫn: & \tengvhd \\
+		\end{tabular}\par
+		\vspace{0.8cm}
+		{\bfseries Thái Nguyên, tháng 11 năm 2026\par}
+	\end{titlepage}
+
+	\pagenumbering{arabic}
+
+	\chapter{DỊCH VỤ CLOUD ĐƯỢC LỰA CHỌN}
+
+	\section{Tổng quan}
+
+	ChatFrog là chatbot AI tự host: mô hình \tenLLM{} và \tenImage{} chạy trên máy chủ GPU RTX 5090 của nhóm, còn ứng dụng web triển khai trên các dịch vụ cloud dưới đây. Mỗi dịch vụ đảm nhiệm một vai trò riêng và đều là tài nguyên có sẵn hoặc gói miễn phí (Bảng~\ref{tab:dichvu}).
+
+	\begin{table}[H]
+		\centering
+		\caption{Các dịch vụ cloud sử dụng}\label{tab:dichvu}
+		\small
+		\begin{tabularx}{\linewidth}{|p{2.8cm}|p{2.2cm}|L|p{2cm}|}
+			\hline
+			\textbf{Dịch vụ} & \textbf{Mô hình} & \textbf{Vai trò} & \textbf{Chi phí} \\ \hline
+			VPS ICTU & Private cloud & Chạy Nginx, container API, lưu file & Có sẵn \\ \hline
+			Namecheap & Domain & Tên miền \code{naot.me} & Có sẵn \\ \hline
+			Cloudflare & DNSaaS & DNS, proxy ẩn IP, TLS, chống DDoS & Free \\ \hline
+			MongoDB Atlas & DBaaS & Lưu người dùng, hội thoại, tin nhắn & Free (M0) \\ \hline
+			Tailscale & NaaS & Mạng riêng VPS -- máy chủ GPU & Free \\ \hline
+			GitHub & SaaS & Lưu trữ mã nguồn, nguồn triển khai & Free \\ \hline
+			Máy chủ GPU RTX 5090 & Self-host & Chạy \tenLLM{} và \tenImage{} & Có sẵn \\ \hline
+		\end{tabularx}
+	\end{table}
+
+	\section{Thông tin, giao diện và tính năng từng dịch vụ}
+
+	\subsection{VPS ICTU (private cloud)}
+
+	VPS do nhà trường cấp trên hạ tầng private cloud nội bộ: Ubuntu 22.04.5 LTS, 16 vCPU (Intel Xeon Gold 6252), 67 GiB RAM, ổ đĩa 687 GB, IP public \ipvps. Dịch vụ \emph{không có trang web quản trị}; giao diện làm việc là terminal qua SSH bằng khóa công khai (Hình~\ref{fig:vps-console}), màn hình đăng nhập cho biết tải hệ thống, mức dùng ổ đĩa (68,7\%), bộ nhớ (69\%) và các bản cập nhật bảo mật. Nhóm có toàn quyền quản trị nên cài được Nginx, Podman, Node.js, cấu hình tường lửa UFW và lưu file người dùng.
+
+	\anhchup{vps-console.png}{Đăng nhập SSH vào VPS ICTU}{fig:vps-console}
+
+	\subsection{Namecheap -- tên miền}
+
+	Namecheap là nhà đăng ký tên miền; tên miền \code{naot.me} có sẵn, thời hạn 15/05/2026 -- 15/05/2027, bật bảo vệ thông tin chủ sở hữu. Sau khi đăng nhập, menu gồm \emph{Dashboard}, \emph{Domain List}, \emph{SSL Certificates}, \emph{Profile}\ldots; trang chi tiết tên miền (Hình~\ref{fig:namecheap}) có trạng thái, thời hạn, tự động gia hạn và mục \emph{Nameservers}. Nhóm chuyển mục này sang \emph{Custom DNS} với hai nameserver của Cloudflare để Cloudflare quản lý DNS.
+
+	\anhchup{namecheap-ns.png}{Mục Nameservers của naot.me trên Namecheap trỏ về Cloudflare}{fig:namecheap}
+
+	\subsection{Cloudflare (DNSaaS)}
+
+	Cloudflare cung cấp DNS, proxy và lớp bảo vệ ở biên; nhóm dùng gói Free. Dashboard có các nhóm \emph{DNS}, \emph{SSL/TLS}, \emph{Security}, \emph{Caching}, \emph{Analytics}\ldots; trang \emph{DNS $\to$ Records} (Hình~\ref{fig:cf-dns}) liệt kê bản ghi (27/200) với loại, nội dung, trạng thái proxy và TTL. Nhóm dùng: bản ghi \code{A} cho \code{chat} trỏ tới \ipvps{} ở chế độ \emph{Proxied} (ẩn IP thật của VPS), cấp chứng chỉ TLS cho người dùng cuối, bật \emph{Always Use HTTPS} và lọc tấn công cơ bản.
+
+	\anhchup{cloudflare-dns.png}{Bản ghi DNS của naot.me trên Cloudflare}{fig:cf-dns}
+
+	\subsection{MongoDB Atlas (DBaaS)}
+
+	Atlas là MongoDB được quản lý hoàn toàn; nhóm dùng cluster \code{naot} gói Free (M0), MongoDB 8.0.34 trên Google Cloud, tối đa 512 MB. Trang \emph{Project Overview} (Hình~\ref{fig:atlas-console}) hiển thị trạng thái \emph{ACTIVE}, dung lượng đã dùng (103,58/512 MB), số kết nối (6/500), biểu đồ \emph{Throughput} và các nút \emph{Connect}, \emph{Browse collections}, \emph{Metrics}; menu bên trái gồm \emph{Clusters}, \emph{Data Explorer}, \emph{Backup}, \emph{Database \& Network Access}. Nhóm dùng \emph{Database Access} để tạo người dùng CSDL giới hạn quyền, \emph{Network Access} để cấu hình địa chỉ được phép kết nối và \emph{Connect} để lấy chuỗi \code{mongodb+srv://}; kết nối được mã hóa TLS.
+
+	\anhchup{atlas-console.png}{Trang Project Overview của cluster M0 trên MongoDB Atlas}{fig:atlas-console}
+
+	\subsection{Tailscale (NaaS)}
+
+	Tailscale tạo mạng riêng ảo dựa trên WireGuard, tự xuyên NAT và cấp cho mỗi máy một địa chỉ \code{100.x.y.z}. Giao diện có công tắc kết nối, mục \emph{Devices} liệt kê các máy kèm trạng thái và IP, chi tiết mỗi máy gồm tên MagicDNS, IPv4/IPv6 và hạn khóa (Hình~\ref{fig:ts-console}). Máy chủ GPU là \code{ecom-5090} (\code{100.96.27.28}); VPS gọi mô hình qua địa chỉ này mà máy GPU không cần mở cổng hay có IP public.
+
+	\anhchup{tailscale-console.png}{Danh sách thiết bị trong mạng Tailscale}{fig:ts-console}
+
+	\subsection{GitHub (SaaS)}
+
+	GitHub lưu trữ mã nguồn và quản lý phiên bản bằng Git. Mã nguồn ở kho riêng tư \code{chatfrog}, nhánh \code{main}, 11 commit. Trang kho (Hình~\ref{fig:github}) có các thẻ \emph{Code}, \emph{Issues}, \emph{Pull requests}, \emph{Actions}, \emph{Settings}; thẻ \emph{Code} hiển thị cây thư mục (\code{apps}, \code{nginx}, \code{compose.yaml}, \code{Makefile}\ldots) và commit mới nhất. Trên VPS, nhóm lấy bản mới bằng \code{git pull} rồi build lại.
+
+	\anhchup{github-repo.png}{Kho mã nguồn chatfrog trên GitHub}{fig:github}
+
+	\subsection{Máy chủ GPU RTX 5090 (self-host)}
+
+	Máy của nhóm, không phải dịch vụ cloud: Ubuntu 26.04.1 LTS, CPU Intel Core Ultra 9 285K, RAM 128 GiB, GPU NVIDIA RTX 5090 32 GB VRAM; chạy \tenLLM{} qua Ollama / llama.cpp và \tenImage{} qua ComfyUI, chỉ nhận kết nối từ VPS qua Tailscale.
+
+	\section{Tính hợp lý của dịch vụ được lựa chọn}
+
+	\begin{table}[H]
+		\centering
+		\caption{Lý do chọn dịch vụ}\label{tab:hopli}
+		\small
+		\begin{tabularx}{\linewidth}{|p{3cm}|L|}
+			\hline
+			\textbf{Thành phần} & \textbf{Lý do chọn} \\ \hline
+			VPS ICTU & Có sẵn, cấu hình lớn (16 vCPU, 67 GiB RAM), IP tĩnh, toàn quyền root \\ \hline
+			Namecheap + Cloudflare & Có tên miền thật; Cloudflare cấp TLS, ẩn IP, chống DDoS miễn phí \\ \hline
+			MongoDB Atlas & Dữ liệu hội thoại lồng nhau hợp mô hình tài liệu; được quản lý, có dashboard \\ \hline
+			Tailscale & Mạng riêng mã hóa, xuyên NAT, cài nhanh; GPU không lộ ra Internet \\ \hline
+			GitHub & Quản lý phiên bản mã và cấu hình, triển khai lặp lại bằng \code{git pull} \\ \hline
+			GPU tự host & Không trả phí theo token, dữ liệu chat không gửi cho bên thứ ba \\ \hline
+		\end{tabularx}
+	\end{table}
+
+	\textbf{Ưu điểm:} chi phí gần như bằng 0; bảo mật nhiều lớp (Cloudflare ẩn IP, API chỉ nghe loopback sau Nginx, Atlas dùng TLS, GPU chỉ truy cập qua Tailscale); mỗi dịch vụ một vai trò nên dễ thay thế hoặc mở rộng.
+
+	\textbf{Hạn chế:}
+	\begin{itemize}
+		\item VPS ICTU chỉ có một máy, không có console để tạo snapshot hay đổi cấu hình, phụ thuộc nhà trường.
+		\item Atlas M0 giới hạn 512 MB, không có sao lưu tự động; Network Access đang mở \code{0.0.0.0/0}, an toàn dựa vào mật khẩu mạnh và TLS.
+		\item Cloudflare Free không có SLA; đoạn Cloudflare -- VPS đang chạy HTTP (chế độ Flexible).
+		\item Máy GPU phụ thuộc đường truyền Tailscale; khi máy tắt thì chat và tạo ảnh không hoạt động.
+	\end{itemize}
+
+	Tổ hợp này đáp ứng yêu cầu của đề tài (truy cập qua tên miền và HTTPS, lưu dữ liệu bền vững, gọi mô hình AI trên GPU riêng an toàn) với chi phí gần như bằng không, phù hợp quy mô mini project.
+
+\end{document}

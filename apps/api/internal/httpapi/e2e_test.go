@@ -147,10 +147,12 @@ func TestE2E(t *testing.T) {
 		t.Fatal(err)
 	}
 	storage, _ := files.NewStorage(cfg.FilesDir)
-	llm := provider.NewLLM(cfg.LLMBaseURL, cfg.LLMAPIKey, cfg.LLMModel)
-	img := provider.NewImage(cfg.ImageBaseURL, cfg.ImageAPIKey, cfg.ImageModel)
-	monitor := admin.NewMonitor(llm, img, st)
-	chatSvc := chat.New(cfg, st, storage, llm, tools.NewImageTool(st, storage, img, cfg.ImageTimeout), monitor)
+	l, im := cfg.LLMs[0], cfg.Images[0]
+	llms := []admin.LLMSpec{{Key: l.Key, Profile: l.Profile, Provider: provider.NewLLM(l.BaseURL, l.APIKey, l.Model),
+		Limits: provider.LLMLimits{Context: l.ContextTokens, MaxOutput: l.MaxOutputTokens, Vision: l.Vision, VisionMaxPx: l.VisionMaxPx}}}
+	images := []admin.ImageSpec{{Key: im.Key, Profile: im.Profile, Provider: provider.NewImage(im.BaseURL, im.APIKey, im.Model), Timeout: im.Timeout}}
+	monitor := admin.NewMonitor(llms, images, st)
+	chatSvc := chat.New(cfg, st, storage, monitor.LLM(), tools.NewImageTool(st, storage, monitor.Image(), im.Timeout), monitor)
 	srv := httptest.NewServer(New(cfg, st, storage, auth.New(cfg, st), chatSvc, monitor).Router())
 	defer srv.Close()
 
@@ -312,7 +314,7 @@ func TestE2E(t *testing.T) {
 	e.json(http.MethodGet, "/api/admin/stats", nil, http.StatusOK, &stats)
 	var health admin.Health
 	e.json(http.MethodGet, "/api/admin/health", nil, http.StatusOK, &health)
-	if !health.LLM.OK || !health.Image.OK || !health.Mongo.OK {
+	if !health.LLMs[0].OK || !health.Images[0].OK || !health.Mongo.OK {
 		t.Errorf("health: %+v", health)
 	}
 	var users page[adminUser]

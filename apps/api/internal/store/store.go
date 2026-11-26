@@ -24,6 +24,7 @@ type Store struct {
 	messages      *mongo.Collection
 	files         *mongo.Collection
 	auditLogs     *mongo.Collection
+	appSettings   *mongo.Collection
 }
 
 func Connect(ctx context.Context, uri, dbName string) (*Store, error) {
@@ -47,6 +48,7 @@ func Connect(ctx context.Context, uri, dbName string) (*Store, error) {
 		messages:      db.Collection("messages"),
 		files:         db.Collection("files"),
 		auditLogs:     db.Collection("audit_logs"),
+		appSettings:   db.Collection("app_settings"),
 	}, nil
 }
 
@@ -212,5 +214,30 @@ func (s *Store) Audit(ctx context.Context, actor bson.ObjectID, action string, t
 	_, err := s.auditLogs.InsertOne(ctx, AuditLog{
 		ID: bson.NewObjectID(), ActorID: actor, Action: action, TargetID: target, Meta: meta, CreatedAt: now(),
 	})
+	return err
+}
+
+// DisabledModels returns the model keys an admin switched off.
+func (s *Store) DisabledModels(ctx context.Context) (map[string]bool, error) {
+	var doc struct {
+		Disabled []string `bson:"disabled"`
+	}
+	err := s.appSettings.FindOne(ctx, bson.M{"_id": "models"}).Decode(&doc)
+	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+		return nil, err
+	}
+	out := map[string]bool{}
+	for _, k := range doc.Disabled {
+		out[k] = true
+	}
+	return out, nil
+}
+
+func (s *Store) SetModelEnabled(ctx context.Context, key string, enabled bool) error {
+	op := "$addToSet"
+	if enabled {
+		op = "$pull"
+	}
+	_, err := s.appSettings.UpdateOne(ctx, bson.M{"_id": "models"}, bson.M{op: bson.M{"disabled": key}}, options.UpdateOne().SetUpsert(true))
 	return err
 }

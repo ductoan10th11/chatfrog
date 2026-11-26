@@ -9,6 +9,13 @@ import { Sidebar } from '@/features/conversations/Sidebar'
 import { SettingsModal } from '@/features/settings/SettingsModal'
 import { S } from '@/lib/strings'
 
+// /?embed=1 inside an iframe (the slide deck's live demo): chat only, no sidebar or header.
+// Read once so it survives in-app navigation, which drops the query string.
+const EMBED =
+  typeof window !== 'undefined' &&
+  window.self !== window.top &&
+  new URLSearchParams(window.location.search).get('embed') === '1'
+
 /** Sidebar + main. Below 768px the sidebar becomes a drawer. */
 export function AppShell() {
   const [drawerOpen, setDrawerOpen] = useState(false)
@@ -20,6 +27,13 @@ export function AppShell() {
     : section === 'images' || section === 'documents'
       ? S.library[section]
       : S.app.name
+
+  if (EMBED)
+    return (
+      <main className="h-dvh min-h-0">
+        <Outlet />
+      </main>
+    )
 
   return (
     <div className="flex h-dvh overflow-hidden">

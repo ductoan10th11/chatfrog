@@ -6,8 +6,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"go.mongodb.org/mongo-driver/v2/bson"
 
+	"chatfrog/api/internal/admin"
 	"chatfrog/api/internal/auth"
 	"chatfrog/api/internal/httpx"
 	"chatfrog/api/internal/store"
@@ -163,4 +165,25 @@ func (s *Server) stats(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) health(w http.ResponseWriter, r *http.Request) {
 	httpx.JSON(w, http.StatusOK, s.monitor.Check(r.Context()))
+}
+
+func (s *Server) setModel(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Enabled *bool `json:"enabled"`
+	}
+	if httpx.Decode(w, r, &body, 1<<10) != nil {
+		return
+	}
+	if body.Enabled == nil {
+		httpx.BadRequest(w, "enabled không hợp lệ")
+		return
+	}
+	switch err := s.monitor.SetEnabled(r.Context(), chi.URLParam(r, "key"), *body.Enabled); {
+	case errors.Is(err, admin.ErrUnknownModel):
+		httpx.NotFound(w, "mô hình")
+	case err != nil:
+		httpx.Internal(w, r, err)
+	default:
+		httpx.JSON(w, http.StatusOK, s.monitor.Check(r.Context()))
+	}
 }

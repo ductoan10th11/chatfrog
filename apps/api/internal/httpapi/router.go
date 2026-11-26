@@ -83,6 +83,7 @@ func (s *Server) Router() http.Handler {
 			r.Patch("/api/admin/users/{id}", s.updateUser)
 			r.Get("/api/admin/stats", s.stats)
 			r.Get("/api/admin/health", s.health)
+			r.Put("/api/admin/models/{key}", s.setModel)
 		})
 	})
 

@@ -1,4 +1,13 @@
-import type { AdminUser, Conversation, FileRef, Health, Message, Stats, User } from '@/types/api'
+import type {
+  AdminUser,
+  Conversation,
+  FileRef,
+  Health,
+  Message,
+  ModelKey,
+  Stats,
+  User,
+} from '@/types/api'
 import { newId } from './utils'
 
 const MIN = 60_000
@@ -265,15 +274,25 @@ export function createStats(now: number = Date.now()): Stats {
 }
 
 export function createHealth(now: number = Date.now()): Health {
+  const svc = (key: ModelKey, profile: string, model: string, ms: number, enabled: boolean) => ({
+    key,
+    profile,
+    ok: true,
+    latency_ms: ms,
+    model,
+    last_error: null,
+    checked_at: iso(now),
+    enabled,
+  })
   return {
-    llm: { ok: true, latency_ms: 142, model: 'qwen3.5-4b', last_error: null, checked_at: iso(now) },
-    image: {
-      ok: true,
-      latency_ms: 310,
-      model: 'flux.2-klein-4b',
-      last_error: null,
-      checked_at: iso(now),
-    },
+    llms: [
+      svc('llm_cloud', 'cloud', 'qwen3.8-flash:plan', 142, true),
+      svc('llm_local', 'local', 'qwen-3.6-35b-a3b:5090', 188, false),
+    ],
+    images: [
+      svc('image_cloud', 'cloud', 'qwen-image-3.0-pro:plan', 310, true),
+      svc('image_local', 'local', 'qwen-image-2.1:5090', 420, false),
+    ],
     mongo: { ok: true },
   }
 }

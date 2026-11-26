@@ -11,6 +11,22 @@ import (
 	"time"
 )
 
+// LLMProfile is one LLM server/model, configured by <PROFILE>_BASE_URL, _API_KEY, _LLM_MODEL,
+// _LLM_CONTEXT_TOKENS, _LLM_MAX_OUTPUT_TOKENS, _LLM_VISION, _VISION_MAX_PX.
+type LLMProfile struct {
+	Key, Profile, BaseURL, APIKey, Model string
+	ContextTokens, MaxOutputTokens       int
+	Vision                               bool
+	VisionMaxPx                          int
+}
+
+// ImageProfile is one image server/model: <PROFILE>_IMAGE_MODEL, _IMAGE_MAX_CONCURRENCY, _IMAGE_TIMEOUT.
+type ImageProfile struct {
+	Key, Profile, BaseURL, APIKey, Model string
+	MaxConcurrency                       int
+	Timeout                              time.Duration
+}
+
 type Config struct {
 	AppOrigin string
 	HTTPAddr  string
@@ -26,22 +42,15 @@ type Config struct {
 	SessionTTL         time.Duration
 	CookieSecure       bool
 
-	LLMBaseURL         string
-	LLMAPIKey          string
-	LLMModel           string
-	LLMContextTokens   int
-	LLMMaxOutputTokens int
-	LLMVision          bool
-	VisionMaxPx        int
-	LLMMaxConcurrency  int
+	// Profiles in default order (cloud first). One LLM and one image model are on at a time.
+	LLMs   []LLMProfile
+	Images []ImageProfile
+
+	LLMMaxConcurrency int
 	// LLMReasoningEffort is sent as `reasoning_effort`; "none" disables thinking.
 	LLMReasoningEffort string
-
-	ImageBaseURL        string
-	ImageAPIKey         string
-	ImageModel          string
+	// ImageMaxConcurrency is the largest IMAGE_MAX_CONCURRENCY of any profile.
 	ImageMaxConcurrency int
-	ImageTimeout        time.Duration
 
 	FilesDir        string
 	MaxUploadBytes  int64
@@ -83,29 +92,40 @@ func Load() (*Config, error) {
 	c.AllowedEmails = emailSet(env("ALLOWED_EMAILS", ""))
 	c.SessionTTL = durationEnv("SESSION_TTL", 720*time.Hour, &errs)
 
-	baseURL := env("BASE_URL", "")
-	apiKey := env("API_KEY", "none")
-	c.LLMBaseURL = strings.TrimRight(env("LLM_BASE_URL", baseURL), "/")
-	c.LLMAPIKey = env("LLM_API_KEY", apiKey)
-	c.LLMModel = env("LLM_MODEL", "")
-	c.ImageBaseURL = strings.TrimRight(env("IMAGE_BASE_URL", baseURL), "/")
-	c.ImageAPIKey = env("IMAGE_API_KEY", apiKey)
-	c.ImageModel = env("IMAGE_MODEL", "")
-	if c.LLMBaseURL == "" || c.LLMModel == "" {
-		errs = append(errs, errors.New("BASE_URL (or LLM_BASE_URL) and LLM_MODEL are required"))
+	for _, prof := range []string{"cloud", "local"} {
+		P := strings.ToUpper(prof) + "_"
+		base := strings.TrimRight(env(P+"BASE_URL", ""), "/")
+		key := env(P+"API_KEY", "none")
+		if m := env(P+"LLM_MODEL", ""); m != "" && base != "" {
+			l := LLMProfile{Key: "llm_" + prof, Profile: prof, BaseURL: base, APIKey: key, Model: m,
+				ContextTokens:   intEnv(P+"LLM_CONTEXT_TOKENS", 32768, &errs),
+				MaxOutputTokens: intEnv(P+"LLM_MAX_OUTPUT_TOKENS", 4096, &errs),
+				Vision:          boolEnv(P+"LLM_VISION", true, &errs),
+				VisionMaxPx:     intEnv(P+"VISION_MAX_PX", 1024, &errs)}
+			if l.ContextTokens <= l.MaxOutputTokens {
+				errs = append(errs, fmt.Errorf("%sLLM_CONTEXT_TOKENS must be greater than %sLLM_MAX_OUTPUT_TOKENS", P, P))
+			}
+			c.LLMs = append(c.LLMs, l)
+		}
+		if m := env(P+"IMAGE_MODEL", ""); m != "" && base != "" {
+			im := ImageProfile{Key: "image_" + prof, Profile: prof, BaseURL: base, APIKey: key, Model: m,
+				MaxConcurrency: intEnv(P+"IMAGE_MAX_CONCURRENCY", 1, &errs),
+				Timeout:        durationEnv(P+"IMAGE_TIMEOUT", 180*time.Second, &errs)}
+			if im.MaxConcurrency < 1 {
+				errs = append(errs, fmt.Errorf("%sIMAGE_MAX_CONCURRENCY must be >= 1", P))
+			}
+			c.ImageMaxConcurrency = max(c.ImageMaxConcurrency, im.MaxConcurrency)
+			c.Images = append(c.Images, im)
+		}
 	}
-	if c.ImageBaseURL == "" || c.ImageModel == "" {
-		errs = append(errs, errors.New("BASE_URL (or IMAGE_BASE_URL) and IMAGE_MODEL are required"))
+	if len(c.LLMs) == 0 {
+		errs = append(errs, errors.New("set CLOUD_ or LOCAL_ BASE_URL and LLM_MODEL (e.g. CLOUD_LLM_MODEL)"))
 	}
-
-	c.LLMContextTokens = intEnv("LLM_CONTEXT_TOKENS", 32768, &errs)
-	c.LLMMaxOutputTokens = intEnv("LLM_MAX_OUTPUT_TOKENS", 4096, &errs)
-	c.LLMVision = boolEnv("LLM_VISION", true, &errs)
-	c.VisionMaxPx = intEnv("VISION_MAX_PX", 1024, &errs)
+	if len(c.Images) == 0 {
+		errs = append(errs, errors.New("set CLOUD_ or LOCAL_ BASE_URL and IMAGE_MODEL (e.g. CLOUD_IMAGE_MODEL)"))
+	}
 	c.LLMMaxConcurrency = intEnv("LLM_MAX_CONCURRENCY", 2, &errs)
 	c.LLMReasoningEffort = env("LLM_REASONING_EFFORT", "low")
-	c.ImageMaxConcurrency = intEnv("IMAGE_MAX_CONCURRENCY", 1, &errs)
-	c.ImageTimeout = durationEnv("IMAGE_TIMEOUT", 180*time.Second, &errs)
 
 	c.FilesDir = env("FILES_DIR", "./data/files")
 	c.MaxUploadBytes = int64(intEnv("MAX_UPLOAD_MB", 20, &errs)) << 20
@@ -118,11 +138,8 @@ func Load() (*Config, error) {
 	}
 	c.StatsTimezone = tz
 
-	if c.LLMContextTokens <= c.LLMMaxOutputTokens {
-		errs = append(errs, errors.New("LLM_CONTEXT_TOKENS must be greater than LLM_MAX_OUTPUT_TOKENS"))
-	}
-	if c.LLMMaxConcurrency < 1 || c.ImageMaxConcurrency < 1 {
-		errs = append(errs, errors.New("LLM_MAX_CONCURRENCY and IMAGE_MAX_CONCURRENCY must be >= 1"))
+	if c.LLMMaxConcurrency < 1 {
+		errs = append(errs, errors.New("LLM_MAX_CONCURRENCY must be >= 1"))
 	}
 	return c, errors.Join(errs...)
 }

@@ -4,6 +4,7 @@ import type {
   Conversation,
   FileRef,
   Message,
+  ModelKey,
   Page,
   Part,
   User,
@@ -16,6 +17,15 @@ import { generationStream } from './stream'
 import { fold, decodeCursor, encodeCursor, newId, nowIso, sleep } from './utils'
 
 /* ------------------------------------------------------------ helpers */
+
+// Simulated switches; at most one LLM and one image model on at a time (as the real api).
+const modelEnabled = new Set<ModelKey>(['llm_cloud', 'image_cloud'])
+
+function currentHealth() {
+  const h = createHealth()
+  for (const m of [...h.llms, ...h.images]) m.enabled = modelEnabled.has(m.key)
+  return h
+}
 
 function err(status: number, code: string, message: string, headers?: HeadersInit) {
   return HttpResponse.json({ error: { code, message } }, { status, headers })
@@ -441,10 +451,14 @@ export const handlers = [
     const url = new URL(request.url)
     const type = url.searchParams.get('type')
     const list = Object.values(db().files)
-      .filter((f) => (type === 'image' ? f.mime.startsWith('image/') : !f.mime.startsWith('image/')))
+      .filter((f) =>
+        type === 'image' ? f.mime.startsWith('image/') : !f.mime.startsWith('image/'),
+      )
       .map(({ prompt: _prompt, ...ref }) => ref)
       .reverse()
-    return HttpResponse.json(paginate(list, intParam(url, 'limit', 30), url.searchParams.get('cursor')))
+    return HttpResponse.json(
+      paginate(list, intParam(url, 'limit', 30), url.searchParams.get('cursor')),
+    )
   }),
 
   http.get('/api/files/:id/thumb', ({ params }) => serveFile(params.id as string)),
@@ -539,7 +553,26 @@ export const handlers = [
   }),
   http.get('/api/admin/health', () => {
     const denied = guard({ admin: true })
-    return denied ?? HttpResponse.json(createHealth())
+    return denied ?? HttpResponse.json(currentHealth())
+  }),
+  http.put('/api/admin/models/:key', async ({ params, request }) => {
+    const denied = guard({ admin: true })
+    if (denied) return denied
+    const body = await readJson<{ enabled?: boolean }>(request)
+    const key = params.key as ModelKey
+    const all = [...createHealth().llms, ...createHealth().images]
+    const target = all.find((m) => m.key === key)
+    if (!target || typeof body?.enabled !== 'boolean')
+      return HttpResponse.json(
+        { error: { code: 'invalid_request', message: 'Không hợp lệ' } },
+        { status: 400 },
+      )
+    if (body.enabled) {
+      const kind = key.split('_')[0]
+      for (const m of all) if (m.key.startsWith(kind + '_')) modelEnabled.delete(m.key)
+      modelEnabled.add(key)
+    } else modelEnabled.delete(key)
+    return HttpResponse.json(currentHealth())
   }),
 ]
 

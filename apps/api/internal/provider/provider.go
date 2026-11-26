@@ -183,3 +183,11 @@ func IsUnavailable(err error) bool {
 	}
 	return true
 }
+
+// LLMLimits are the per-model caps the chat service reads from the LLM in use.
+type LLMLimits struct {
+	Context     int
+	MaxOutput   int
+	Vision      bool
+	VisionMaxPx int
+}

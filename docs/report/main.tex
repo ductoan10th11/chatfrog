@@ -1,0 +1,633 @@
+\RequirePackage{fix-cm}
+\RequirePackage{iftex}
+\documentclass[
+a4paper,
+fontsize=13pt,
+DIV=calc,
+oneside,
+numbers=enddot,
+captions=tableheading,
+bibliography=totoc,
+]{scrreprt}
+
+\newcommand{\tenkhoa}{KHOA CÔNG NGHỆ THÔNG TIN}
+\newcommand{\tenhocphan}{Điện Toán Đám Mây}
+\newcommand{\tengvhd}{TS. Nguyễn Đức Bình}
+\newcommand{\tenlop}{CNTT K22H}
+\newcommand{\tenLLM}{Qwen 3.6}
+\newcommand{\tenImage}{Qwen Image 2.1}
+\newcommand{\ipvps}{203.113.135.195}
+
+\usepackage[top=2.5cm, bottom=2.5cm, left=3cm, right=2cm]{geometry}
+\ifPDFTeX
+\usepackage[T5]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{tgtermes}
+\usepackage[scale=0.95]{tgcursor}
+\DeclareUnicodeCharacter{2192}{\ensuremath{\rightarrow}}
+\else
+\usepackage{fontspec}
+\IfFontExistsTF{Times New Roman}{%
+	\setmainfont{Times New Roman}%
+}{%
+	\setmainfont{texgyretermes}[
+	Extension=.otf,
+	UprightFont=*-regular,
+	BoldFont=*-bold,
+	ItalicFont=*-italic,
+	BoldItalicFont=*-bolditalic]%
+}
+\IfFontExistsTF{DejaVu Sans Mono}{%
+	\setmonofont{DejaVu Sans Mono}[Scale=0.85]%
+}{%
+	\setmonofont{texgyrecursor}[
+	Extension=.otf,
+	UprightFont=*-regular,
+	BoldFont=*-bold,
+	ItalicFont=*-italic,
+	BoldItalicFont=*-bolditalic]%
+}
+\fi
+\usepackage{setspace}
+\setstretch{1.3}
+\setlength{\parskip}{6pt}
+\setlength{\parindent}{1cm}
+\hyphenpenalty=10000
+\exhyphenpenalty=10000
+\emergencystretch=3em
+
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{fvextra}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, fit, backgrounds}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+
+\setlist{itemsep=1pt, topsep=3pt}
+\renewcommand{\arraystretch}{1.25}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\urlstyle{tt}
+
+\setkomafont{disposition}{\normalfont\bfseries}
+\RedeclareSectionCommand[beforeskip=0pt, afterskip=1.2\baselineskip, font=\large]{chapter}
+\RedeclareSectionCommand[font=\normalsize]{section}
+\RedeclareSectionCommand[font=\normalsize]{subsection}
+\renewcommand*{\chapterformat}{CHƯƠNG~\thechapter.\enskip}
+\renewcommand*{\chapterlinesformat}[3]{\centering #2#3\par}
+\setcounter{tocdepth}{\subsectiontocdepth}
+\setkomafont{chapterentry}{\bfseries}
+
+\AtBeginDocument{%
+	\renewcommand{\contentsname}{MỤC LỤC}%
+	\renewcommand{\bibname}{TÀI LIỆU THAM KHẢO}%
+	\renewcommand{\chaptername}{Chương}%
+	\renewcommand{\figurename}{Hình}%
+	\renewcommand{\tablename}{Bảng}%
+}
+\renewcommand*{\figureformat}{\figurename~\thefigure}
+\renewcommand*{\tableformat}{\tablename~\thetable}
+\renewcommand*{\captionformat}{.~}
+\setkomafont{captionlabel}{\bfseries}
+\setcapindent{0pt}
+\pagestyle{plain}
+
+\DefineVerbatimEnvironment{lenh}{Verbatim}{
+	frame=single, framesep=1.5mm, rulecolor=\color{gray!60},
+	fontsize=\footnotesize, breaklines=true, breakanywhere=true, gobble=2, baselinestretch=1}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+
+\newcommand{\timanh}[3]{%
+	\IfFileExists{images/#1}{#2{images/#1}}{%
+		\IfFileExists{#1}{#2{#1}}{#3}}}
+
+\newcommand{\anhchup}[3]{%
+	\begin{figure}[H]
+		\centering
+		\timanh{#1}{\includegraphics[width=0.85\linewidth, height=0.24\textheight, keepaspectratio]}{%
+			\fbox{\parbox[c][3.2cm][c]{0.8\linewidth}{\centering\small\color{gray}%
+					[Chèn ảnh: \texttt{images/\detokenize{#1}}]}}}
+		\caption{#2}\label{#3}
+\end{figure}}
+
+% Hai ảnh cạnh nhau: {file1}{caption1}{label1}{file2}{caption2}{label2}
+\newcommand{\nuaanh}[3]{%
+	\begin{minipage}[t]{0.48\linewidth}
+		\centering
+		\timanh{#1}{\includegraphics[width=\linewidth, height=0.24\textheight, keepaspectratio]}{%
+			\fbox{\parbox[c][3.2cm][c]{0.92\linewidth}{\centering\small\color{gray}%
+					[Chèn ảnh: \texttt{images/\detokenize{#1}}]}}}
+		\caption{#2}\label{#3}
+\end{minipage}}
+\newcommand{\haianh}[6]{%
+	\begin{figure}[H]
+		\nuaanh{#1}{#2}{#3}\hfill\nuaanh{#4}{#5}{#6}
+\end{figure}}
+
+\tikzset{
+	khoi/.style={draw, rounded corners=2pt, align=center, font=\small,
+		minimum height=0.9cm, inner sep=4pt, fill=white},
+	khoiCloud/.style={khoi, fill=green!8},
+	khoiNgoai/.style={khoi, fill=gray!12},
+	muiten/.style={-{Stealth[length=2.2mm]}, thick},
+	nhan/.style={font=\scriptsize, fill=white, inner sep=1pt},
+}
+
+\hypersetup{
+	pdftitle={Báo cáo Mini Project: ChatFrog},
+	pdfauthor={Hoàng Đức Toàn, Hoàng Ngọc Tú},
+}
+
+\begin{document}
+	
+	\begin{titlepage}
+		\begin{tikzpicture}[remember picture, overlay]
+			\draw[line width=1.6pt]
+			([xshift=2.3cm, yshift=-1.8cm]current page.north west) rectangle
+			([xshift=-1.5cm, yshift=1.8cm]current page.south east);
+			\draw[line width=0.5pt]
+			([xshift=2.45cm, yshift=-1.95cm]current page.north west) rectangle
+			([xshift=-1.65cm, yshift=1.95cm]current page.south east);
+		\end{tikzpicture}
+		\centering
+		\setstretch{1.15}
+		{\large\bfseries TRƯỜNG ĐẠI HỌC CÔNG NGHỆ THÔNG TIN\\VÀ TRUYỀN THÔNG\par}
+		{\large\bfseries \tenkhoa\par}
+		\rule{5cm}{0.6pt}\par
+		\vspace{0.6cm}
+		\timanh{logo.png}{\includegraphics[height=3cm]}{%
+			\fbox{\parbox[c][2.8cm][c]{2.8cm}{\centering\small\color{gray}Logo ICTU}}}\par
+		\vspace{0.8cm}
+		{\Large\bfseries BÁO CÁO MINI PROJECT\par}
+		{\large Học phần: \tenhocphan\par}
+		\vspace{0.8cm}
+		{\large\bfseries ĐỀ TÀI:\par}
+		\begin{minipage}{0.9\linewidth}
+			\centering\large\bfseries
+			XÂY DỰNG VÀ TRIỂN KHAI NỀN TẢNG CHATBOT AI CHATFROG HỖ TRỢ HỘI THOẠI THÔNG MINH VÀ TẠO SINH HÌNH ẢNH, TÍCH HỢP QWEN LLM VÀ QWEN IMAGE GENERATION TRÊN MÁY CHỦ ẢO (VPS) ICTU
+		\end{minipage}\par
+		\vspace{0.2cm}
+		\begin{minipage}{0.85\linewidth}
+			\centering\normalsize\itshape
+			Sử dụng Namecheap Domain, Cloudflare DNSaaS, MongoDB Atlas DBaaS, Tailscale NaaS và GitHub SaaS
+		\end{minipage}\par
+		\vfill
+		\begin{tabular}{@{}ll@{}}
+			Sinh viên thực hiện:  & Hoàng Đức Toàn -- DTC235200752 \\
+			& Hoàng Ngọc Tú -- DTC235200787 \\
+			Lớp:                  & \tenlop \\
+			Giảng viên hướng dẫn: & \tengvhd \\
+		\end{tabular}\par
+		\vspace{0.8cm}
+		{\bfseries Thái Nguyên, tháng 11 năm 2026\par}
+	\end{titlepage}
+	
+	\pagenumbering{roman}
+	{\setstretch{1.1}\tableofcontents}
+	\clearpage
+	\pagenumbering{arabic}
+	
+	\chapter{MÔ TẢ BÀI TOÁN}
+	
+	\section{Bài toán}
+	
+	Dùng dịch vụ AI thương mại gặp hai vấn đề: \textbf{chi phí} cộng dồn theo số thành viên và \textbf{dữ liệu} (tài liệu, ảnh nội bộ) bị gửi ra ngoài. ChatFrog tự host mô hình \tenLLM{} \cite{qwen3} và \tenImage{} trên GPU của nhóm (LLM qua Ollama / llama.cpp \cite{ollama}, mô hình ảnh qua ComfyUI), nên chi phí gần như bằng 0 và dữ liệu nằm trong hạ tầng do nhóm kiểm soát. Người dùng đăng nhập bằng Google, chat với AI, yêu cầu tạo hoặc sửa ảnh, đính kèm tài liệu để AI đọc; quản trị viên duyệt người dùng và theo dõi hệ thống. Đầu vào và đầu ra của hệ thống được tóm tắt trong Bảng~\ref{tab:io}.
+	
+	\begin{table}[H]
+		\centering
+		\caption{Đầu vào và đầu ra của hệ thống}\label{tab:io}
+		\begin{tabularx}{\linewidth}{|p{2.2cm}|L|}
+			\hline
+			\textbf{Đầu vào} & Tài khoản Google; tin nhắn văn bản; file đính kèm (ảnh PNG/JPEG/WebP đến 10 MB, tài liệu PDF/DOCX/TXT/CSV đến 20 MB); chỉ dẫn cá nhân \\ \hline
+			\textbf{Đầu ra} & Câu trả lời stream theo từng token (SSE); ảnh PNG do mô hình tạo; lịch sử hội thoại; thống kê và trạng thái hệ thống cho quản trị viên \\ \hline
+		\end{tabularx}
+	\end{table}
+	
+	\section{Thiết kế hệ thống}
+	
+	\subsection{Kiến trúc tổng thể}
+	
+	Kiến trúc được thể hiện ở Hình~\ref{fig:kientruc}. Trình duyệt chỉ giao tiếp với \code{chat.naot.me} qua Cloudflare. Container API chỉ lắng nghe trên \code{127.0.0.1}, mọi truy cập phải đi qua Nginx. Máy chủ GPU không mở cổng ra Internet; VPS gọi tới nó qua mạng riêng Tailscale. Backend viết bằng Go, frontend bằng React; mô hình được gọi qua API tương thích OpenAI \cite{openaiapi}.
+	
+	\begin{figure}[H]
+		\centering
+		\begin{tikzpicture}[node distance=0.55cm and 0.9cm]
+			\node[khoiNgoai, minimum width=4.2cm] (browser) {Trình duyệt (React SPA)};
+			\node[khoiCloud, below=of browser, minimum width=4.2cm] (cf) {Cloudflare (DNS, proxy, TLS)};
+			\node[khoi, below=1cm of cf, minimum width=4.2cm] (nginx) {Nginx: web tĩnh + reverse proxy};
+			\node[khoi, below=of nginx, minimum width=4.2cm] (api) {chatfrog-api (Go, Podman)\\\scriptsize 127.0.0.1:9260};
+			\node[khoiCloud, right=1.4cm of api, minimum width=3.4cm] (atlas) {MongoDB Atlas};
+			\node[khoiNgoai, left=1.4cm of api, minimum width=3.4cm] (gpu) {Máy chủ GPU RTX 5090\\\scriptsize LLM + mô hình ảnh};
+			\begin{scope}[on background layer]
+				\node[draw, dashed, rounded corners, fill=blue!3, fit=(nginx)(api), inner sep=8pt,
+				label={[font=\small\bfseries]below:VPS ICTU}] {};
+			\end{scope}
+			\draw[muiten] (browser) -- node[nhan, right]{HTTPS} (cf);
+			\draw[muiten] (cf) -- node[nhan, right]{HTTP} (nginx);
+			\draw[muiten] (nginx) -- node[nhan, right]{/api/*} (api);
+			\draw[muiten] (api) -- node[nhan, above]{TLS} (atlas);
+			\draw[muiten] (api) -- node[nhan, above]{Tailscale} (gpu);
+		\end{tikzpicture}
+		\caption{Kiến trúc tổng thể của hệ thống ChatFrog}\label{fig:kientruc}
+	\end{figure}
+	
+	\subsection{Sơ đồ lớp dữ liệu}
+	
+	Dữ liệu lưu trong MongoDB Atlas gồm năm lớp chính (Hình~\ref{fig:class}). Mỗi người dùng có nhiều phiên đăng nhập và nhiều hội thoại; mỗi hội thoại gồm nhiều tin nhắn; tin nhắn có thể đính kèm hoặc sinh ra file. Nội dung file lưu trên volume của VPS, CSDL chỉ giữ siêu dữ liệu.
+	
+	\begin{figure}[H]
+		\centering
+		\begin{tikzpicture}[
+			lop/.style={draw, fill=white, inner sep=0pt, font=\scriptsize},
+			lk/.style={thick},
+			bs/.style={font=\scriptsize, inner sep=2pt}]
+			\newcommand{\lop}[2]{\begin{tabular}{@{\,}l@{\,}}\multicolumn{1}{c}{\textbf{#1}}\\\hline #2\end{tabular}}
+			\node[lop] (user) at (0,0) {\lop{User}{id\\email, name\\role, status\\settings}};
+			\node[lop] (conv) at (5.2,0) {\lop{Conversation}{id, user\_id\\title, pinned\\updated\_at}};
+			\node[lop] (msg) at (10.4,0) {\lop{Message}{id, conversation\_id\\role, status\\parts[ ], usage}};
+			\node[lop] (sess) at (0,-4) {\lop{Session}{id, user\_id\\token\_hash\\expires\_at}};
+			\node[lop] (file) at (10.4,-4) {\lop{File}{id, user\_id\\kind, mime, size\\storage\_key}};
+			\draw[lk] (user) -- node[bs, above, pos=0.12]{1} node[bs, above, pos=0.88]{*} (conv);
+			\draw[lk] (conv) -- node[bs, above, pos=0.12]{1} node[bs, above, pos=0.88]{*} (msg);
+			\draw[lk] (user) -- node[bs, right, pos=0.15]{1} node[bs, right, pos=0.85]{*} (sess);
+			\draw[lk] (msg) -- node[bs, right, pos=0.15]{*} node[bs, right, pos=0.85]{*} node[bs, left, midway]{đính kèm} (file);
+		\end{tikzpicture}
+		\caption{Sơ đồ lớp dữ liệu của hệ thống}\label{fig:class}
+	\end{figure}
+	
+	\subsection{Luồng nghiệp vụ chính}
+	
+	Luồng chat (Hình~\ref{fig:luong}) gồm các bước: (1) người dùng đăng nhập Google, backend kiểm tra trạng thái đã được duyệt và tạo phiên; (2) người dùng gửi tin nhắn, có thể kèm file; (3) backend lưu tin nhắn vào Atlas, gọi mô hình qua Tailscale; (4) kết quả được stream về trình duyệt theo SSE, đồng thời lưu lại. Với yêu cầu tạo ảnh, backend gọi mô hình ảnh, lưu file PNG lên volume và ghi siêu dữ liệu vào Atlas. Nếu mô hình không phản hồi, tin nhắn được đánh dấu lỗi và người dùng có thể gửi lại.
+	
+	\begin{figure}[H]
+		\centering
+		\begin{tikzpicture}[node distance=0.5cm and 0.6cm]
+			\node[khoiNgoai] (a) {Đăng nhập\\Google};
+			\node[khoi, right=of a] (b) {Kiểm tra\\phiên, duyệt};
+			\node[khoi, right=of b] (c) {Lưu tin\\nhắn (Atlas)};
+			\node[khoiNgoai, right=of c] (d) {Gọi mô hình\\(Tailscale)};
+			\node[khoi, below=0.9cm of d] (e) {Stream SSE\\về trình duyệt};
+			\node[khoiCloud, left=of e] (f) {Lưu kết quả\\(Atlas, volume)};
+			\draw[muiten] (a) -- (b);
+			\draw[muiten] (b) -- (c);
+			\draw[muiten] (c) -- (d);
+			\draw[muiten] (d) -- (e);
+			\draw[muiten] (e) -- (f);
+			\draw[muiten, dashed] (d.north) to[bend left=35] node[nhan, above]{lỗi / hết thời gian} (b.north);
+		\end{tikzpicture}
+		\caption{Luồng xử lý một yêu cầu chat}\label{fig:luong}
+	\end{figure}
+
+	Tạo và sửa ảnh không có nút riêng: \tenLLM{} tự quyết định gọi công cụ \code{generate_image} (OpenAI function calling) khi người dùng muốn có ảnh. Mô hình viết lại prompt bằng tiếng Anh; nếu có \code{reference_image_ids} thì backend gọi \code{images.edit} để sửa ảnh có sẵn, ngược lại gọi \code{images.generate}. Tài liệu đính kèm được trích văn bản khi tải lên và chèn vào ngữ cảnh, cắt theo giới hạn \code{DOC_MAX_CHARS}.
+
+	\subsection{Đặc tả API}
+
+	Backend cung cấp REST API dưới tiền tố \code{/api}, dữ liệu JSON (riêng tải file dùng \code{multipart/form-data}). Xác thực bằng cookie \code{cf_session} (HttpOnly); mọi yêu cầu khác GET phải có header \code{Origin} trùng địa chỉ ứng dụng để chống CSRF. Các endpoint chính được liệt kê ở Bảng~\ref{tab:api}.
+
+	\begin{table}[H]
+		\centering
+		\caption{Các endpoint chính của ChatFrog API}\label{tab:api}
+		\footnotesize
+		\begin{tabularx}{\linewidth}{|p{1.6cm}|p{7.1cm}|L|}
+			\hline
+			\textbf{Method} & \textbf{Đường dẫn} & \textbf{Chức năng} \\ \hline
+			GET & \code{/api/auth/google/login}, \code{/auth/gg/callback} & Đăng nhập Google, tạo phiên, đặt cookie \\ \hline
+			POST, GET & \code{/api/auth/logout}, \code{/api/me} & Đăng xuất; thông tin người dùng hiện tại \\ \hline
+			GET, POST & \code{/api/conversations} & Danh sách (phân trang, tìm kiếm) / tạo hội thoại \\ \hline
+			GET, PATCH, DELETE & \code{/api/conversations/:id} & Xem, đổi tên, ghim, xóa hội thoại \\ \hline
+			GET, POST & \code{/api/conversations/:id/messages} & Lịch sử tin nhắn / gửi tin nhắn, trả lời stream SSE \\ \hline
+			POST & \code{/api/messages/:id/regenerate}, \code{/api/messages/:id/edit} & Sinh lại câu trả lời cuối / sửa tin nhắn rồi sinh lại (SSE) \\ \hline
+			POST, GET, DELETE & \code{/api/files}, \code{/api/files/:id[/thumb]} & Tải lên, liệt kê, tải về (ảnh gốc hoặc ảnh thu nhỏ), xóa file (chỉ chủ sở hữu) \\ \hline
+			GET, PUT & \code{/api/settings} & Chỉ dẫn cá nhân, giao diện sáng/tối \\ \hline
+			GET, PATCH & \code{/api/admin/users[/:id]} & Quản trị: duyệt, chặn, đổi quyền người dùng \\ \hline
+			GET & \code{/api/admin/stats}, \code{/api/admin/health} & Quản trị: thống kê theo ngày, trạng thái mô hình và CSDL \\ \hline
+			PUT & \code{/api/admin/models/:key} & Quản trị: bật/tắt mô hình (mỗi loại chỉ một mô hình được bật) \\ \hline
+			GET & \code{/api/healthz} & Kiểm tra sống, dùng cho healthcheck container \\ \hline
+		\end{tabularx}
+	\end{table}
+
+	\begin{sloppypar}
+	Ba endpoint sinh câu trả lời trả về \code{text/event-stream}: các sự kiện \code{reasoning.delta}, \code{text.delta} chứa từng đoạn văn bản, \code{tool.start}/\code{tool.done} báo tiến trình tạo ảnh, \code{queue} báo vị trí chờ GPU, \code{message.done} kết thúc lượt. Lỗi trả về JSON có \code{code} và \code{message}: 401 chưa đăng nhập, 403 chờ duyệt hoặc bị chặn, 409 đang có lượt sinh, 413/415 file quá lớn hoặc sai định dạng; Nginx trả 429 khi đăng nhập quá nhiều lần. Khi mô hình không phản hồi, tin nhắn được lưu ở trạng thái lỗi với mã \code{model_unavailable} (hoặc \code{image_unavailable} cho tạo ảnh).
+	\end{sloppypar}
+
+	\chapter{DỊCH VỤ CLOUD ĐƯỢC LỰA CHỌN}
+	
+	\section{Thông tin dịch vụ}
+	
+	Mỗi thành phần dùng một dịch vụ chuyên dụng, đều là tài nguyên có sẵn hoặc gói miễn phí (Bảng~\ref{tab:dichvu}).
+	
+	\begin{table}[H]
+		\centering
+		\caption{Các dịch vụ cloud sử dụng}\label{tab:dichvu}
+		\begin{tabularx}{\linewidth}{|p{2.8cm}|p{2.3cm}|L|p{2cm}|}
+			\hline
+			\textbf{Dịch vụ} & \textbf{Mô hình} & \textbf{Vai trò} & \textbf{Chi phí} \\ \hline
+			VPS ICTU & IaaS (private cloud) & Chạy Nginx, container API, lưu file & Có sẵn \\ \hline
+			Namecheap & Domain & Tên miền \code{naot.me} & Có sẵn \\ \hline
+			Cloudflare & DNSaaS & DNS, proxy ẩn IP, TLS, chống DDoS & Free \\ \hline
+			MongoDB Atlas & DBaaS & Lưu người dùng, hội thoại, tin nhắn & Free (M0) \\ \hline
+			Tailscale & NaaS & Mạng riêng VPS -- máy chủ GPU & Free \\ \hline
+			GitHub & SaaS & Lưu trữ mã nguồn, nguồn triển khai & Free \\ \hline
+			Máy chủ GPU RTX 5090 & Self-host & Chạy \tenLLM{} qua Ollama / llama.cpp và \tenImage{} qua ComfyUI & Có sẵn \\ \hline
+		\end{tabularx}
+	\end{table}
+	
+	\begin{itemize}
+		\item \textbf{VPS ICTU:} máy chủ ảo do nhà trường cấp trên private cloud nội bộ, IP public tĩnh làm đích cho bản ghi DNS. Dịch vụ không có trang web quản trị; nhóm làm việc qua SSH bằng khóa công khai, có toàn quyền quản trị để cài Nginx, Podman, Node.js và cấu hình tường lửa UFW.
+		\item \textbf{Namecheap + Cloudflare} \cite{namecheap,cloudflare}: tên miền \code{naot.me} (hạn 15/05/2027) đăng ký ở Namecheap, nameserver chuyển sang Cloudflare. Nhóm dùng trang \emph{DNS} để tạo bản ghi \code{A} ở chế độ \emph{Proxied} (ẩn IP thật của VPS) và trang \emph{SSL/TLS} để cấp chứng chỉ, bật \emph{Always Use HTTPS}.
+		\item \textbf{MongoDB Atlas} \cite{atlas}: cluster \code{naot} gói M0, MongoDB 8.0 trên Google Cloud, tối đa 512 MB (Hình~\ref{fig:atlas-console}). Nhóm dùng \emph{Database Access} để tạo người dùng giới hạn quyền, \emph{Network Access} để cấu hình địa chỉ được phép và \emph{Connect} để lấy chuỗi \code{mongodb+srv://}; kết nối mã hóa TLS.
+		\item \textbf{Tailscale} \cite{tailscale}: mạng riêng dựa trên WireGuard, tự xuyên NAT. Mục \emph{Devices} liệt kê các máy và địa chỉ \code{100.x.y.z} (Hình~\ref{fig:ts-console}); VPS gọi máy GPU \code{ecom-5090} qua địa chỉ này mà máy GPU không cần mở cổng.
+		\item \textbf{GitHub} \cite{github}: kho riêng tư \code{chatfrog} lưu mã nguồn và cấu hình triển khai; VPS lấy bản mới bằng \code{git pull}.
+	\end{itemize}
+	
+	\anhchup{atlas-console.png}{Trang Project Overview của cluster M0 trên MongoDB Atlas}{fig:atlas-console}
+	
+	\anhchup{tailscale-console.png}{Danh sách thiết bị trong mạng Tailscale}{fig:ts-console}
+	
+	\section{Cấu hình máy chủ}
+	
+	Hệ thống dùng hai máy: VPS ICTU chạy ứng dụng và máy chủ GPU chạy mô hình. Cấu hình của hai máy được tóm tắt ở Bảng~\ref{tab:cauhinh}.
+	
+	\begin{table}[H]
+		\centering
+		\caption{Cấu hình VPS và máy chủ GPU}\label{tab:cauhinh}
+		\small
+		\begin{tabularx}{\linewidth}{|p{3cm}|L|L|}
+			\hline
+			\textbf{Thông số} & \textbf{VPS ICTU} & \textbf{Máy chủ GPU} \\ \hline
+			Vai trò & Nginx, container API, lưu file & Chạy \tenLLM{} (chat) và \tenImage{} (tạo ảnh) \\ \hline
+			Hệ điều hành & Ubuntu 22.04.5 LTS & Ubuntu 26.04.1 LTS \\ \hline
+			CPU & 16 vCPU (Intel Xeon Gold 6252 @ 2,1 GHz) & 24 CPU (Intel Core Ultra 9 285K) \\ \hline
+			RAM & 67 GiB & 128 GiB \\ \hline
+			Ổ đĩa & 687 GB & 256 GB + 2 TB \\ \hline
+			GPU & Không có & NVIDIA GeForce RTX 5090, 32 GB VRAM \\ \hline
+			Mạng & IP public \ipvps; Tailscale & Không mở cổng ra Internet; Tailscale \code{100.96.27.28} \\ \hline
+			Phần mềm chính & Nginx 1.18, Podman 6.1, Tailscale 1.102 & Ollama / llama.cpp, ComfyUI, Tailscale \\ \hline
+		\end{tabularx}
+	\end{table}
+	
+	\section{Lý do lựa chọn}
+	
+	\begin{table}[H]
+		\centering
+		\caption{Lý do chọn từng dịch vụ}\label{tab:hopli}
+		\small
+		\begin{tabularx}{\linewidth}{|p{3.2cm}|L|}
+			\hline
+			\textbf{Thành phần} & \textbf{Lý do chọn} \\ \hline
+			VPS ICTU & Có sẵn, cấu hình lớn (16 vCPU, 67 GiB RAM), IP tĩnh, toàn quyền root \\ \hline
+			Namecheap + Cloudflare & Có tên miền thật; Cloudflare cấp TLS, ẩn IP, chống DDoS miễn phí \\ \hline
+			MongoDB Atlas & Dữ liệu hội thoại lồng nhau hợp mô hình tài liệu; được quản lý, có dashboard \\ \hline
+			Tailscale & Mạng riêng mã hóa, xuyên NAT, cài nhanh; GPU không lộ ra Internet \\ \hline
+			GitHub & Quản lý phiên bản mã và cấu hình, triển khai lặp lại bằng \code{git pull} \\ \hline
+			GPU tự host & Không trả phí theo token, dữ liệu chat không gửi cho bên thứ ba \\ \hline
+		\end{tabularx}
+	\end{table}
+	
+	\textbf{Ưu điểm:} chi phí gần như bằng 0; bảo mật nhiều lớp (Cloudflare ẩn IP, API chỉ nghe loopback sau Nginx, Atlas dùng tài khoản riêng và TLS, GPU chỉ truy cập qua Tailscale); mỗi dịch vụ một vai trò nên dễ thay thế hoặc mở rộng. So với AWS Free Tier (1 vCPU, 1 GB RAM), VPS ICTU mạnh hơn nhiều và miễn phí. Không dịch vụ nào cần liên kết thẻ thanh toán, nên không phát sinh chi phí ngoài dự kiến và không cần đặt cảnh báo ngân sách.
+	
+	\textbf{Hạn chế:}
+	\begin{itemize}
+		\item VPS ICTU: chỉ có một máy, chưa có dự phòng; không có console để tạo snapshot hay đổi cấu hình; phụ thuộc nhà trường.
+		\item Atlas M0: dung lượng 512 MB, hiệu năng chia sẻ, không có sao lưu tự động; Network Access đang mở \code{0.0.0.0/0}, an toàn dựa vào mật khẩu mạnh và TLS.
+		\item Cloudflare Free: không có SLA; đoạn Cloudflare -- VPS chạy HTTP (chế độ Flexible), không được mã hóa.
+		\item Máy GPU: độ trễ và độ sẵn sàng phụ thuộc đường truyền Tailscale; khi máy tắt thì chat và tạo ảnh không hoạt động.
+	\end{itemize}
+	
+	\chapter{PHÂN CÔNG CÔNG VIỆC}
+	
+	\begin{table}[H]
+		\centering
+		\caption{Bảng phân công công việc}\label{tab:phancong}
+		\small
+		\begin{tabularx}{\linewidth}{|c|p{3.1cm}|p{2.3cm}|L|c|}
+			\hline
+			\textbf{STT} & \textbf{Họ tên -- MSSV} & \textbf{Vai trò} & \textbf{Nhiệm vụ và sản phẩm} & \textbf{Đóng góp} \\ \hline
+			1 & Hoàng Đức Toàn \newline DTC235200752 & Nhóm trưởng, Frontend, Backend, DevOps & Giao diện React; backend Go, CSDL; tích hợp mô hình; cấu hình VPS, Podman, Nginx, Cloudflare, Atlas, Tailscale & 50\% \\ \hline
+			2 & Hoàng Ngọc Tú \newline DTC235200787 & Phân tích, Báo cáo, Kiểm thử & Phân tích bài toán; viết báo cáo; kiểm thử hệ thống; làm slide & 50\% \\ \hline
+		\end{tabularx}
+	\end{table}
+	
+	\chapter{KẾ HOẠCH THỰC HIỆN}
+	
+	\begin{table}[H]
+		\centering
+		\caption{Kế hoạch thực hiện dự án}\label{tab:kehoach}
+		\small
+		\begin{tabularx}{\linewidth}{|c|p{3.6cm}|L|p{2.7cm}|}
+			\hline
+			\textbf{Bước} & \textbf{Công việc} & \textbf{Kết quả đầu ra} & \textbf{Thời gian} \\ \hline
+			1 & Khảo sát, thiết kế & Đặc tả, danh sách dịch vụ & 13/10 -- 21/10 \\ \hline
+			2 & Xây dựng ứng dụng & Mã nguồn frontend, backend & 21/10 -- 25/10 \\ \hline
+			3 & Tích hợp mô hình & Chat, tạo ảnh với mô hình thật & 24/10 -- 26/10 \\ \hline
+			4 & Triển khai lên cloud & Hệ thống chạy tại \code{chat.naot.me} & 26/10 -- 28/10 \\ \hline
+			5 & Báo cáo phần 1 -- 5 & Báo cáo giữa kỳ & 27/10 -- 02/11 \\ \hline
+			6 & Hoàn thiện, demo & Báo cáo đầy đủ, slide, video & 03/11 -- 09/11 \\ \hline
+		\end{tabularx}
+	\end{table}
+	
+	\chapter{HƯỚNG DẪN TRIỂN KHAI LÊN CLOUD}
+	
+	\section{Chuẩn bị VPS}
+	
+	Đăng nhập VPS bằng khóa SSH, cài Git, Make, Nginx, Node.js 24 (build giao diện) và Podman. Kho \code{apt} của Ubuntu 22.04 chỉ có Podman 3.4, chưa hỗ trợ \code{podman compose}, nên nhóm cài bản mới theo hướng dẫn chính thức \cite{podman}. Sau khi cài, kiểm tra phiên bản để chắc chắn Podman và plugin compose hoạt động.
+	
+	\begin{lenh}
+		ssh-keygen -t ed25519 && ssh-copy-id <user>@<IP_VPS>
+		ssh <user>@<IP_VPS>
+		sudo apt update && sudo apt install -y git make nginx curl ufw
+		sudo apt install -y podman podman-compose   # hoặc cài bản mới theo tài liệu Podman
+		podman --version && podman compose version
+		curl -o- \
+		https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+		source ~/.bashrc && nvm install 24 && node -v
+		loginctl enable-linger $USER
+		systemctl --user enable --now podman-restart.service
+	\end{lenh}
+	
+	\section{Cấu hình tên miền và DNS}\label{sec:dns}
+	
+	\begin{enumerate}
+		\item Cloudflare: \emph{Add a domain} → \code{naot.me} → gói \emph{Free}; ghi lại hai nameserver được cấp.
+		\item Namecheap: \emph{Domain List} → \emph{Manage} → \emph{Nameservers} → \emph{Custom DNS}, nhập hai nameserver trên.
+		\item Cloudflare: thêm bản ghi \code{A}, tên \code{chat}, giá trị \ipvps, bật \emph{Proxied}; mục \emph{SSL/TLS} → \emph{Edge Certificates} bật \emph{Always Use HTTPS}; chế độ mã hóa chọn \emph{Flexible} (xem Mục~\ref{sec:tls}).
+	\end{enumerate}
+	
+	Kiểm tra bằng \code{dig +short chat.naot.me}: kết quả phải là IP của Cloudflare (172.67.176.79 và 104.21.88.101), không phải IP của VPS.
+	
+	\anhchup{cloudflare-dns.png}{Bản ghi DNS của chat.naot.me trên Cloudflare}{fig:cf-dns}
+	
+	\section{Thiết lập MongoDB Atlas}
+	
+	\begin{enumerate}
+		\item Tạo cluster gói \emph{M0 (Free)}, vùng Singapore.
+		\item \emph{Database Access}: tạo người dùng \code{chatfrog}, quyền \emph{Read and write} trên CSDL \code{chatfrog}.
+		\item \emph{Network Access}: thêm \code{0.0.0.0/0} (cho phép mọi địa chỉ). Nhóm không đặt danh sách IP riêng; bù lại dùng mật khẩu mạnh, kết nối TLS và chỉ cấp quyền trên CSDL \code{chatfrog}.
+		\item \emph{Connect} → \emph{Drivers}: sao chép chuỗi \code{mongodb+srv://...} cho biến \code{MONGO_URI}.
+	\end{enumerate}
+
+	\section{Kết nối máy chủ mô hình qua Tailscale}
+	
+	\begin{lenh}
+		curl -fsSL https://tailscale.com/install.sh | sh
+		sudo tailscale up
+		tailscale status        # ecom-5090  100.96.27.28  active; direct
+		curl -s http://100.96.27.28:9099/v1/models \
+		-H "Authorization: Bearer $API_KEY"
+	\end{lenh}
+	
+	\section{Triển khai ứng dụng}
+	
+	Tạo OAuth client loại \emph{Web application} trên Google Cloud Console \cite{googleoauth} với redirect URI \url{https://chat.naot.me/auth/gg/callback}. Sau đó lấy mã nguồn, tạo file \code{.env} từ \code{.env.example} và điền các biến cấu hình (Bảng~\ref{tab:env}), rồi build và chạy. Backend được đóng gói bằng \code{Containerfile} hai giai đoạn; \code{compose.yaml} chỉ mở cổng \code{127.0.0.1:9260}, gắn volume lưu file và có healthcheck.
+	
+	\begin{table}[H]
+		\centering
+		\caption{Các biến trong file \code{.env}}\label{tab:env}
+		\small
+		\begin{tabularx}{\linewidth}{|p{4.3cm}|L|}
+			\hline
+			\textbf{Biến} & \textbf{Ý nghĩa} \\ \hline
+			\code{MONGO_URI} & Chuỗi kết nối MongoDB Atlas \\ \hline
+			\code{LOCAL_BASE_URL}, \code{LOCAL_API_KEY} & Địa chỉ và khóa máy chủ mô hình qua Tailscale (API tương thích OpenAI, dạng \code{http://<IP Tailscale>:9099/v1}) \\ \hline
+			\code{LOCAL_LLM_MODEL}, \code{LOCAL_IMAGE_MODEL} & Tên mô hình chat và mô hình ảnh \\ \hline
+			\code{LOCAL_LLM_CONTEXT_TOKENS}, \code{LOCAL_LLM_MAX_OUTPUT_TOKENS} & Cửa sổ ngữ cảnh (32768) và số token trả lời tối đa (4096) \\ \hline
+			\code{LOCAL_LLM_VISION}, \code{LOCAL_VISION_MAX_PX} & Bật nhận ảnh đầu vào; cạnh dài tối đa của ảnh gửi cho mô hình (1024) \\ \hline
+			\code{LOCAL_IMAGE_MAX_CONCURRENCY}, \code{LOCAL_IMAGE_TIMEOUT} & Số lượt tạo ảnh đồng thời (1) và thời gian chờ tối đa (180 giây) \\ \hline
+			\code{GG_CALLBACK_URL} & Redirect URI của Google OAuth (\code{https://chat.naot.me/auth/gg/callback}); địa chỉ công khai của ứng dụng lấy theo URL này \\ \hline
+			\code{GG_CLIENT_ID}, \code{GG_CLIENT_SECRET} & Thông tin OAuth client của Google \\ \hline
+			\code{ADMIN_EMAILS} & Email được cấp quyền quản trị và kích hoạt ngay \\ \hline
+			\code{ALLOWED_EMAILS} & Email được kích hoạt ngay, không cần chờ duyệt \\ \hline
+		\end{tabularx}
+	\end{table}
+	
+	Các biến \code{LOCAL_*} khai báo một cặp mô hình chat và ảnh; có thể khai báo thêm một cặp thứ hai bằng tiền tố \code{CLOUD_} với cùng tên biến. Khi có nhiều mô hình cùng loại, quản trị viên bật đúng một mô hình chat và một mô hình ảnh trong \emph{Cài đặt} $\rightarrow$ \emph{Hệ thống}.
+	
+	\begin{lenh}
+		git clone https://github.com/ductoan10th11/chatfrog.git Chats && cd Chats
+		cp .env.example .env && chmod 600 .env
+		make up                                     # podman compose up -d --build
+		curl -s http://127.0.0.1:9260/api/healthz   # {"ok":true}
+		make install-web && make build-web          # -> apps/web/dist
+	\end{lenh}
+	
+	\anhchup{make-up.png}{Container toan-chatfrog-api đang chạy và healthz trả về ok}{fig:makeup}
+
+	\section{Cấu hình Nginx và tường lửa}
+	
+	File \code{nginx/chat.naot.me.conf} \cite{nginx} nghe cổng 80: phục vụ file tĩnh \code{apps/web/dist}; chuyển \code{/api/} tới \code{127.0.0.1:9260} với \code{proxy_buffering off} để stream SSE; lấy IP thật qua \code{CF-Connecting-IP}; giới hạn 10 yêu cầu/phút cho đăng nhập. Cổng 9260 không cần mở vì API chỉ nghe loopback; trên tường lửa chỉ mở 22 và 80 (HTTPS kết thúc tại Cloudflare, xem Mục~\ref{sec:tls}).
+	
+	\begin{lenh}
+		make nginx-link         # ln -sf vào sites-enabled, nginx -t, reload
+		sudo ufw allow OpenSSH && sudo ufw allow 80/tcp
+		sudo ufw enable
+		sudo ufw status verbose
+	\end{lenh}
+
+	\section{Cấu hình HTTPS với Cloudflare}\label{sec:tls}
+	
+	Chứng chỉ TLS do Cloudflare tự cấp và quản lý cho \code{chat.naot.me}, nên không cần cài Certbot trên VPS. Với chế độ \emph{Flexible}, kết nối được mã hóa từ trình duyệt tới Cloudflare; từ Cloudflare tới VPS đi qua HTTP cổng 80, vì vậy Nginx chỉ nghe cổng 80. Kiểm tra bằng cách mở \code{http://chat.naot.me}: trình duyệt phải tự chuyển sang HTTPS nhờ \emph{Always Use HTTPS}.
+
+	Hạn chế: đoạn Cloudflare -- VPS chưa được mã hóa. Hướng nâng cấp là cấp \emph{Cloudflare Origin Certificate} cho Nginx và chuyển sang chế độ \emph{Full (strict)}.
+	
+	\section{Kiểm tra và cập nhật}
+	
+	Truy cập \url{https://chat.naot.me}, đăng nhập bằng email quản trị, gửi thử tin nhắn và yêu cầu tạo ảnh để kiểm tra toàn bộ luồng VPS -- Atlas -- Tailscale -- GPU. Khi có phiên bản mới, chạy \code{git pull && make deploy}.
+	
+	\anhchup{chatfrog-ui.png}{Giao diện ChatFrog truy cập qua HTTPS tại chat.naot.me}{fig:https}
+
+	\chapter{KẾT QUẢ TRIỂN KHAI}
+	
+	\section{Minh chứng hệ thống đang chạy}
+	
+	Hệ thống chạy trên Internet tại \url{https://chat.naot.me} (Hình~\ref{fig:https}), kiểm tra sống tại \url{https://chat.naot.me/api/healthz}; mã nguồn ở kho riêng tư \url{https://github.com/ductoan10th11/chatfrog}. Container \code{toan-chatfrog-api} ở trạng thái \emph{healthy} (Hình~\ref{fig:makeup}), cluster Atlas \emph{ACTIVE} (Hình~\ref{fig:atlas-console}) và máy chủ GPU trực tuyến trong mạng Tailscale (Hình~\ref{fig:ts-console}).
+	
+	\section{Tính năng và giao diện}
+	
+	\begin{itemize}
+		\item \textbf{Đăng nhập và duyệt tài khoản:} đăng nhập bằng Google; tài khoản mới ở trạng thái chờ duyệt, email trong \code{ADMIN_EMAILS} hoặc \code{ALLOWED_EMAILS} được kích hoạt ngay.
+		\item \textbf{Hội thoại:} câu trả lời hiện dần theo từng token, phần suy luận nằm trong khối \emph{Đang suy nghĩ\ldots} thu gọn được; hỗ trợ Markdown và code; dừng, sinh lại, sửa tin nhắn; ghim, đổi tên, tìm và xóa hội thoại (Hình~\ref{fig:chat}).
+		\item \textbf{Tạo và sửa ảnh:} người dùng mô tả bằng tiếng Việt, mô hình viết lại prompt tiếng Anh và gọi \tenImage{}; muốn sửa thì đính kèm ảnh hoặc nhắc tới ảnh vừa tạo (Hình~\ref{fig:imggen}, \ref{fig:imgedit}).
+		\item \textbf{Đọc tài liệu:} đính kèm PDF, DOCX, TXT, CSV để hỏi về nội dung; tài liệu quá dài được cảnh báo phần bị cắt (Hình~\ref{fig:doc}).
+		\item \textbf{Cài đặt cá nhân:} chỉ dẫn tùy chỉnh phong cách trả lời, giao diện sáng/tối.
+		\item \textbf{Quản trị:} duyệt, chặn, đổi quyền người dùng (Hình~\ref{fig:admin-users}); thống kê tin nhắn, ảnh, token, thời gian phản hồi theo ngày; trạng thái máy chủ mô hình, độ trễ, lỗi gần nhất và công tắc bật/tắt từng mô hình (chỉ một mô hình chat và một mô hình ảnh được bật cùng lúc).
+	\end{itemize}
+	
+	\anhchup{chat-stream.png}{Hội thoại với \tenLLM{}: khối suy luận hiển thị trong lúc câu trả lời đang stream}{fig:chat}
+	
+	\haianh{image-gen.png}{Tạo ảnh từ mô tả văn bản}{fig:imggen}%
+	{image-edit.png}{Chỉnh sửa ảnh vừa tạo}{fig:imgedit}
+	
+	\haianh{doc-chat.png}{Hỏi đáp trên tài liệu đính kèm}{fig:doc}%
+	{admin-users.png}{Trang quản trị người dùng}{fig:admin-users}
+	
+	\section{Kiểm thử}
+	
+	Ngoài kiểm thử tự động (\code{make test}: Go test và Vitest; \code{make test-api-e2e} chạy với Atlas và mô hình thật trên CSDL tạm), nhóm kiểm thử thủ công trên \url{https://chat.naot.me} theo Bảng~\ref{tab:kiemthu}.
+	
+	\begin{table}[H]
+		\centering
+		\caption{Kịch bản kiểm thử chính}\label{tab:kiemthu}
+		\small
+		\begin{tabularx}{\linewidth}{|c|p{5.6cm}|L|}
+			\hline
+			\textbf{STT} & \textbf{Kịch bản} & \textbf{Kết quả mong đợi} \\ \hline
+			1 & Đăng nhập bằng email mới & Chuyển sang trang chờ duyệt; gọi API khác trả 403 \\ \hline
+			2 & Gửi tin nhắn, yêu cầu tạo rồi sửa ảnh & Câu trả lời stream dần; ảnh PNG hiển thị trong hội thoại \\ \hline
+			3 & Tải file quá 20 MB hoặc sai định dạng & Báo lỗi 413 / 415, không lưu file \\ \hline
+			4 & Gửi tin nhắn khi câu trả lời trước chưa xong & Báo lỗi 409 \\ \hline
+			5 & Máy GPU tắt hoặc mất kết nối Tailscale & Tin nhắn báo lỗi \code{model_unavailable}, gửi lại được \\ \hline
+			6 & Đăng nhập liên tục nhiều lần; truy cập \code{http://} & Nginx trả 429; Cloudflare chuyển sang HTTPS \\ \hline
+		\end{tabularx}
+	\end{table}
+	
+	\section{Hướng dẫn sử dụng}
+	
+	Mở \url{https://chat.naot.me}, chọn \emph{Đăng nhập với Google} (nếu thấy trang chờ duyệt, liên hệ quản trị viên). Nhập câu hỏi rồi nhấn \emph{Enter} (\emph{Shift+Enter} để xuống dòng). Muốn có ảnh, mô tả ảnh cần tạo; muốn sửa, đính kèm ảnh hoặc nhắc tới ảnh vừa tạo. Biểu tượng đính kèm nhận ảnh PNG/JPEG/WebP đến 10 MB và tài liệu PDF/DOCX/TXT/CSV đến 20 MB. Thanh bên dùng để mở lại, ghim, tìm hoặc xóa hội thoại; mục \emph{Cài đặt} để nhập chỉ dẫn cá nhân; quản trị viên dùng mục \emph{Quản trị}.
+	
+	\chapter{KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN}
+	
+	\section{Đánh giá kết quả}
+	
+	Nhóm đã hoàn thành các mục tiêu đặt ra: ChatFrog chạy trên VPS ICTU, truy cập qua \code{chat.naot.me} với HTTPS; có chat stream, tạo và sửa ảnh, đọc tài liệu, chỉ dẫn cá nhân, đăng nhập Google và trang quản trị. Mô hình chạy trên GPU của nhóm nên không trả phí theo token và dữ liệu không gửi cho bên thứ ba. Chưa đạt: đoạn Cloudflare -- VPS chưa mã hóa, Atlas chưa giới hạn IP, chưa có CI/CD, sao lưu CSDL còn chạy tay (\code{make db-backup}), chưa có dự phòng cho VPS và máy GPU.
+	
+	\section{Thuận lợi và khó khăn}
+	
+	\textbf{Thuận lợi:} VPS cấu hình lớn, toàn quyền quản trị; có sẵn GPU RTX 5090 và tên miền; các dịch vụ còn lại có gói miễn phí đủ dùng.
+	
+	\textbf{Khó khăn và cách khắc phục:}
+	\begin{itemize}
+		\item \emph{Podman cũ:} \code{apt} của Ubuntu 22.04 chỉ có bản 3.4, thiếu \code{podman compose}; nhóm cài bản mới theo tài liệu chính thức.
+		\item \emph{Stream SSE bị giữ lại qua Nginx:} câu trả lời hiện ra một lần; nhóm tắt \code{proxy_buffering}, \code{gzip} cho \code{/api/} và tăng \code{proxy_read_timeout} lên 600 giây.
+		\item \emph{Mất IP thật sau Cloudflare:} giới hạn tần suất áp lên IP của Cloudflare; nhóm khai báo \code{set_real_ip_from} và đọc header \code{CF-Connecting-IP}.
+		\item \emph{Giới hạn GPU và ngữ cảnh:} backend chỉ chạy 2 lượt chat và 1 lượt tạo ảnh cùng lúc, báo vị trí chờ qua sự kiện \code{queue}; ảnh thu nhỏ về 1024 px, tài liệu cắt theo \code{DOC_MAX_CHARS} để vừa ngữ cảnh 32K token.
+	\end{itemize}
+	
+	\section{Hướng phát triển}
+	
+	\begin{itemize}
+		\item \textbf{Bảo mật:} Cloudflare Origin Certificate với chế độ \emph{Full (strict)}; giới hạn Network Access của Atlas theo IP của VPS; thêm Content-Security-Policy.
+		\item \textbf{Tự động hóa và giám sát:} GitHub Actions chạy kiểm thử và triển khai khi đẩy mã; sao lưu CSDL định kỳ; Prometheus và Grafana để theo dõi, cảnh báo.
+		\item \textbf{Mở rộng:} thêm máy GPU và cân bằng tải; tìm kiếm ngữ nghĩa (RAG) trên tài liệu dài; chia sẻ và xuất hội thoại.
+	\end{itemize}
+	
+	\begin{thebibliography}{9}
+		\setlength{\itemsep}{0pt}
+		\small
+		\bibitem{qwen3} Qwen Team (2025), \emph{Qwen3 Technical Report}, arXiv:2505.09388.
+		\bibitem{ollama} Ollama (2026), \emph{Ollama Documentation}, \url{https://docs.ollama.com}.
+		\bibitem{openaiapi} OpenAI (2026), \emph{API Reference}, \url{https://platform.openai.com/docs}.
+		\bibitem{namecheap} Namecheap (2026), \emph{Knowledgebase}, \url{https://www.namecheap.com/support}.
+		\bibitem{cloudflare} Cloudflare (2026), \emph{Cloudflare Docs}, \url{https://developers.cloudflare.com}.
+		\bibitem{atlas} MongoDB (2026), \emph{Atlas Documentation}, \url{https://www.mongodb.com/docs/atlas}.
+		\bibitem{tailscale} Tailscale (2026), \emph{Tailscale Docs}, \url{https://tailscale.com/kb}.
+		\bibitem{github} GitHub (2026), \emph{GitHub Docs}, \url{https://docs.github.com}.
+		\bibitem{podman} Red Hat (2026), \emph{Podman Documentation}, \url{https://docs.podman.io}.
+		\bibitem{googleoauth} Google (2026), \emph{Using OAuth 2.0}, \url{https://developers.google.com/identity}.
+		\bibitem{nginx} F5 NGINX (2026), \emph{NGINX Documentation}, \url{https://nginx.org/en/docs}.
+	\end{thebibliography}
+	
+\end{document}

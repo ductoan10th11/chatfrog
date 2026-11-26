@@ -63,13 +63,27 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	llm := provider.NewLLM(cfg.LLMBaseURL, cfg.LLMAPIKey, cfg.LLMModel)
-	img := provider.NewImage(cfg.ImageBaseURL, cfg.ImageAPIKey, cfg.ImageModel)
-	monitor := admin.NewMonitor(llm, img, st)
-	imageTool := tools.NewImageTool(st, storage, img, cfg.ImageTimeout)
+	var llms []admin.LLMSpec
+	for _, l := range cfg.LLMs {
+		llms = append(llms, admin.LLMSpec{Key: l.Key, Profile: l.Profile,
+			Provider: provider.NewLLM(l.BaseURL, l.APIKey, l.Model),
+			Limits:   provider.LLMLimits{Context: l.ContextTokens, MaxOutput: l.MaxOutputTokens, Vision: l.Vision, VisionMaxPx: l.VisionMaxPx}})
+	}
+	var images []admin.ImageSpec
+	var imageTimeout time.Duration
+	for _, im := range cfg.Images {
+		images = append(images, admin.ImageSpec{Key: im.Key, Profile: im.Profile,
+			Provider: provider.NewImage(im.BaseURL, im.APIKey, im.Model), Timeout: im.Timeout})
+		imageTimeout = max(imageTimeout, im.Timeout)
+	}
+	monitor := admin.NewMonitor(llms, images, st)
+	if err := monitor.Load(ctx); err != nil {
+		return err
+	}
+	imageTool := tools.NewImageTool(st, storage, monitor.Image(), imageTimeout)
 	imageTool.OnResult = func(err error) { monitor.Record("image", err) }
 
-	chatSvc := chat.New(cfg, st, storage, llm, imageTool, monitor)
+	chatSvc := chat.New(cfg, st, storage, monitor.LLM(), imageTool, monitor)
 	api := httpapi.New(cfg, st, storage, auth.New(cfg, st), chatSvc, monitor)
 
 	go cleanOrphans(ctx, st, storage)
@@ -89,7 +103,7 @@ func run() error {
 	errCh := make(chan error, 1)
 	go func() {
 		slog.Info("listening", "addr", cfg.HTTPAddr, "version", version, "db", cfg.MongoDB,
-			"llm", cfg.LLMModel, "image", cfg.ImageModel, "origin", cfg.AppOrigin)
+			"llm", monitor.LLM().Model(), "image", monitor.Image().Model(), "origin", cfg.AppOrigin)
 		errCh <- srv.ListenAndServe()
 	}()
 

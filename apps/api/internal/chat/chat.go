@@ -166,11 +166,12 @@ func (g *generation) run(ctx context.Context) (string, *store.MessageError) {
 
 	// Round 1: the answer, possibly with tool calls. Round 2 (only after tools ran): one short
 	// confirmation sentence, without thinking or tools, so it never re-calls the tool.
-	res, err := g.complete(ctx, msgs, true, cfg.LLMReasoningEffort, cfg.LLMMaxOutputTokens)
+	maxOut := g.s.limits().MaxOutput
+	res, err := g.complete(ctx, msgs, true, cfg.LLMReasoningEffort, maxOut)
 	if err == nil && res.Content == "" && len(res.ToolCalls) == 0 && cfg.LLMReasoningEffort != "none" {
 		// Some servers end the turn right after thinking when tools are offered:
 		// ask again without thinking.
-		res, err = g.complete(ctx, msgs, true, "none", cfg.LLMMaxOutputTokens)
+		res, err = g.complete(ctx, msgs, true, "none", maxOut)
 	}
 	if ctx.Err() != nil {
 		return store.MsgStopped, nil
@@ -408,4 +409,12 @@ func closeOpenTools(parts []store.Part) {
 			parts[i].Status, parts[i].Error = store.ToolError, "Đã dừng"
 		}
 	}
+}
+
+// limits are the caps of the LLM now in use (the admin may switch models at runtime).
+func (s *Service) limits() provider.LLMLimits {
+	if l, ok := s.llm.(interface{ Limits() provider.LLMLimits }); ok {
+		return l.Limits()
+	}
+	return provider.LLMLimits{Context: 32768, MaxOutput: 4096, Vision: true, VisionMaxPx: 1024}
 }

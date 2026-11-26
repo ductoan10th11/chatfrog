@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="vi" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ChatFrog: chatbot AI trên Public Cloud</title>
+<script>
+  // Áp theme trước khi vẽ để không bị nháy
+  try {
+    var t = localStorage.getItem('slide-theme');
+    if (!t) t = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    document.documentElement.dataset.theme = t;
+  } catch (e) {}
+</script>
+<style>
+  :root, [data-theme="dark"] {
+    --bg: #0b0b0c; --surface: #151516; --surface-2: #1d1d1f; --border: #2a2a2d;
+    --fg: #f2f2f3; --muted: #9a9aa0; --faint: #5c5c62;
+    --accent: #34d399; --accent-soft: rgba(52,211,153,.12);
+    --warn: #fbbf24; --bad: #f87171;
+    --grid: rgba(255,255,255,.04); --shadow: 0 1px 0 rgba(255,255,255,.04) inset, 0 12px 32px rgba(0,0,0,.35);
+  }
+  [data-theme="light"] {
+    --bg: #f4f4f5; --surface: #ffffff; --surface-2: #f4f4f5; --border: #e4e4e7;
+    --fg: #18181b; --muted: #62626a; --faint: #a1a1aa;
+    --accent: #059669; --accent-soft: rgba(5,150,105,.1);
+    --warn: #d97706; --bad: #dc2626;
+    --grid: rgba(0,0,0,.045); --shadow: 0 1px 2px rgba(0,0,0,.05), 0 8px 24px rgba(0,0,0,.06);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--fg);
+    font-family: Inter, "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased; transition: background .25s, color .25s; }
+
+  /* Sân khấu 1280x720, tự co theo cửa sổ */
+  #stage { position: absolute; left: 50%; top: 50%; width: 1280px; height: 720px;
+    transform-origin: center; background: var(--bg); overflow: hidden;
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 40px 40px; border-radius: 4px; }
+  .slide { position: absolute; inset: 0; padding: 56px 72px 64px; display: none; flex-direction: column; }
+  .slide.on { display: flex; }
+
+  /* Hiệu ứng xuất hiện: mỗi phần tử có data-a, độ trễ theo --i; display:none → block làm hiệu ứng chạy lại mỗi lần vào slide */
+  .slide.on [data-a] { animation: rise .6s cubic-bezier(.2,.7,.2,1) both; animation-delay: calc(var(--i, 0) * 90ms + 60ms); }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+  .slide.on [data-a="fade"] { animation-name: fade; }
+  @keyframes fade { from { opacity: 0; } }
+  .slide.on [data-a="pop"] { animation-name: pop; }
+  @keyframes pop { from { opacity: 0; transform: scale(.94); } }
+
+  .eyebrow { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600;
+    letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+  .eyebrow::before { content: ""; width: 24px; height: 2px; background: var(--accent); border-radius: 2px; }
+  h1 { font-size: 84px; line-height: 1.02; letter-spacing: -.035em; font-weight: 800; }
+  h2 { font-size: 42px; line-height: 1.1; letter-spacing: -.025em; font-weight: 750; margin-bottom: 8px; }
+  .lead { font-size: 21px; line-height: 1.5; color: var(--muted); max-width: 920px; }
+  .body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 20px; min-height: 0; }
+  .grid { display: grid; gap: 18px; } .c2 { grid-template-columns: 1fr 1fr; }
+  .c3 { grid-template-columns: repeat(3, 1fr); } .c4 { grid-template-columns: repeat(4, 1fr); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 20px 22px; box-shadow: var(--shadow); }
+  .card h3 { font-size: 19px; font-weight: 700; margin-bottom: 8px; letter-spacing: -.01em; }
+  .card p, .card li { font-size: 16.5px; line-height: 1.5; color: var(--muted); }
+  .card ul { list-style: none; display: grid; gap: 8px; }
+  .card li { padding-left: 20px; position: relative; }
+  .card li::before { content: ""; position: absolute; left: 0; top: .6em; width: 7px; height: 7px;
+    border-radius: 50%; background: var(--accent); }
+  .card.warn li::before { background: var(--warn); }
+  .hl { color: var(--fg); font-weight: 650; }
+  .ico { width: 42px; height: 42px; border-radius: 12px; background: var(--accent-soft); color: var(--accent);
+    display: grid; place-items: center; margin-bottom: 12px; }
+  .ico svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .note { font-size: 16px; line-height: 1.5; color: var(--muted); }
+  code, .code { font-family: "JetBrains Mono", "DejaVu Sans Mono", Consolas, monospace; font-size: 14px; }
+  .code { display: block; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 12px; color: var(--fg); margin-top: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 12.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); font-weight: 600; padding: 0 16px 10px; }
+  td { padding: 11px 16px; font-size: 17px; border-top: 1px solid var(--border); color: var(--muted); }
+  td:first-child { font-weight: 700; color: var(--fg); }
+  td.tag { color: var(--accent); font-weight: 650; }
+  .tbl { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 18px 8px 6px; box-shadow: var(--shadow); }
+
+  .n { width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: var(--bg);
+    font-weight: 800; display: grid; place-items: center; margin-bottom: 12px; font-size: 16px; }
+
+  /* sơ đồ SVG */
+  .arch { width: 100%; height: auto; overflow: visible; }
+  .arch .box { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; }
+  .arch .cloud { fill: var(--accent-soft); stroke: var(--accent); }
+  .arch .vps { fill: none; stroke: var(--faint); stroke-width: 1.5; stroke-dasharray: 6 6; }
+  .arch text { fill: var(--fg); font: 600 16px Inter, "Segoe UI", system-ui, sans-serif; text-anchor: middle; }
+  .arch .sub { fill: var(--muted); font-weight: 500; font-size: 13px; }
+  .arch .lbl { fill: var(--accent); font-weight: 700; font-size: 13px; paint-order: stroke; stroke: var(--bg); stroke-width: 8px; stroke-linejoin: round; }
+  .arch .vlbl { fill: var(--faint); font-size: 13px; letter-spacing: .1em; text-transform: uppercase; }
+  .arch .ln { stroke: var(--muted); stroke-width: 2; fill: none; }
+  .arch .ln.pv { stroke: var(--accent); stroke-dasharray: 7 5; }
+  .arch .dot { fill: var(--accent); }
+  .arch .fld { fill: var(--muted); font-weight: 500; font-size: 13.5px; text-anchor: start; font-family: "JetBrains Mono", "DejaVu Sans Mono", Consolas, monospace; }
+  .arch .ttl { font-weight: 700; font-size: 16px; fill: var(--accent); }
+  .arch .sep { stroke: var(--border); stroke-width: 1.5; }
+  /* vẽ nét, dùng pathLength=1 */
+  .slide.on .arch .draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw .8s ease forwards; animation-delay: calc(var(--i, 0) * 90ms + 60ms); }
+  .slide.on .arch .draw.pv { stroke-dasharray: .035 .025; stroke-dashoffset: 0; animation: showpv .6s both; animation-delay: calc(var(--i, 0) * 90ms + 60ms); }
+  @keyframes draw { from { stroke-dashoffset: 1; opacity: 0; } 8% { opacity: 1; } to { stroke-dashoffset: 0; opacity: 1; } }
+  .arch .draw { opacity: 0; }
+  @keyframes showpv { from { opacity: 0; } to { opacity: 1; } }
+  .slide.on .arch .nd { animation: pop .55s cubic-bezier(.2,.7,.2,1) both; animation-delay: calc(var(--i, 0) * 90ms + 60ms); transform-box: fill-box; transform-origin: center; }
+  .arch .lbl, .arch .dot { opacity: 0; }
+  .slide.on .arch .lbl { animation: fade .5s both; animation-delay: calc(var(--i, 0) * 90ms + 400ms); opacity: 1; }
+  .slide.on .arch .dot { opacity: 1; }
+
+  /* luồng chat */
+  .flow { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0; position: relative; }
+  .st { text-align: center; position: relative; padding: 0 6px; }
+  .st .bub { width: 58px; height: 58px; margin: 0 auto 12px; border-radius: 50%; background: var(--surface); border: 1.5px solid var(--border);
+    display: grid; place-items: center; font-weight: 800; font-size: 20px; color: var(--muted); position: relative; z-index: 1;
+    transition: all .35s; }
+  .st h3 { font-size: 16.5px; font-weight: 700; margin-bottom: 4px; transition: color .35s; color: var(--muted); }
+  .st p { font-size: 14px; color: var(--faint); line-height: 1.4; }
+  .st::after { content: ""; position: absolute; top: 29px; left: calc(50% + 29px); width: calc(100% - 58px); height: 2px; background: var(--border); z-index: 0; }
+  .st:last-child::after { display: none; }
+  .st.act .bub { background: var(--accent); border-color: var(--accent); color: var(--bg); box-shadow: 0 0 0 8px var(--accent-soft); transform: scale(1.08); }
+  .st.act h3 { color: var(--fg); }
+  .st.done .bub { border-color: var(--accent); color: var(--accent); }
+  .st.done::after { background: var(--accent); }
+  .demo { display: grid; gap: 12px; padding: 20px 24px; }
+  .demo .u { justify-self: end; background: var(--accent-soft); color: var(--fg); border-radius: 14px 14px 4px 14px; padding: 9px 16px; font-size: 17px; }
+  .demo .think { font-size: 15px; color: var(--faint); min-height: 20px; opacity: 0; transition: opacity .3s; }
+  .demo .think.on { opacity: 1; }
+  .demo .a { font-size: 18px; line-height: 1.6; color: var(--fg); min-height: 86px; }
+  .flowtool { font-size: 16px; color: var(--muted); }
+  .flowtool b { color: var(--fg); } .flowtool i { color: var(--accent); font-style: normal; font-weight: 700; margin: 0 4px; }
+  .demo .cur { display: inline-block; width: 9px; height: 1.05em; background: var(--accent); vertical-align: -3px; margin-left: 2px; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* ảnh */
+  .shot { border-radius: 14px; border: 1px solid var(--border); box-shadow: var(--shadow); display: block; width: 100%; }
+  .gal { position: relative; aspect-ratio: 3042 / 2070; }
+  .gal img { position: absolute; inset: 0; opacity: 0; transition: opacity .7s; }
+  .gal img.on { opacity: 1; }
+  .cap { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; font-size: 15px; color: var(--muted); }
+  .dots { display: flex; gap: 6px; } .dots i { width: 22px; height: 4px; border-radius: 4px; background: var(--border); transition: all .3s; }
+  .dots i.on { background: var(--accent); width: 34px; }
+
+  .frame { flex: 1.9; position: relative; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: var(--surface); box-shadow: var(--shadow); display: flex; flex-direction: column; min-width: 0; }
+  .frame-bar { height: 34px; display: flex; align-items: center; gap: 6px; padding: 0 14px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+  .frame-bar i { width: 11px; height: 11px; border-radius: 50%; background: #ff5f57; }
+  .frame-bar i:nth-child(2) { background: #febc2e; } .frame-bar i:nth-child(3) { background: #28c840; }
+  .frame-bar span { margin-left: 10px; font-size: 13px; color: var(--muted); }
+  .fbody { flex: 1; position: relative; overflow: hidden; }
+  /* chat hiển thị ở 75%: iframe rộng 133.33% rồi thu về 0.75 */
+  .frame iframe { position: absolute; top: 0; left: 0; width: 133.333%; height: 133.333%; transform: scale(.75); transform-origin: 0 0; border: 0; background: var(--bg); z-index: 1; }
+  .frame-off { position: absolute; inset: 34px 0 0; display: none; place-items: center; text-align: center; padding: 24px; color: var(--muted); font-size: 16px; }
+  .frame.off .frame-off { display: grid; } .frame.off iframe { display: none; }
+  .side { flex: 1; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+  .side h3 { font-size: 19px; font-weight: 700; margin-bottom: 8px; }
+  .side p, .side li { font-size: 16px; line-height: 1.5; color: var(--muted); }
+  ul.plain { list-style: none; display: grid; gap: 6px; } ul.plain li::before { content: "–"; color: var(--accent); margin-right: 8px; }
+  .footer { position: absolute; left: 72px; right: 72px; bottom: 24px; display: flex; justify-content: space-between;
+    font-size: 13px; color: var(--faint); }
+
+  /* bìa */
+  .cover { justify-content: center; }
+  .cover .lead { max-width: 560px; }
+  .cover .shot { position: absolute; right: -150px; bottom: 90px; width: 690px; transform: rotate(-3deg); opacity: .95; }
+  .slide.on.cover .shot { animation: coverin 1s cubic-bezier(.2,.7,.2,1) .3s both; }
+  @keyframes coverin { from { opacity: 0; transform: translateX(80px) rotate(-3deg); } }
+  .meta { display: flex; gap: 32px; margin-top: 34px; }
+  .meta div { font-size: 15.5px; color: var(--muted); } .meta b { display: block; color: var(--fg); font-size: 18px; margin-bottom: 2px; }
+  .cover .footer-note { position: absolute; left: 72px; bottom: 56px; font-size: 14px; color: var(--faint); }
+
+  /* điều khiển */
+  .ui { position: fixed; z-index: 10; display: flex; gap: 8px; }
+  .ui.tr-ui { top: 14px; right: 14px; } .ui.bot { bottom: 14px; left: 50%; transform: translateX(-50%); align-items: center; }
+  .btn { height: 36px; min-width: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--fg); cursor: pointer; display: inline-grid; place-items: center; font: 600 14px inherit; }
+  .btn:hover { border-color: var(--accent); } .btn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  #pos { color: var(--muted); font-size: 14px; min-width: 56px; text-align: center; font-variant-numeric: tabular-nums; }
+  .prog { position: fixed; top: 0; left: 0; height: 3px; background: var(--accent); transition: width .3s; z-index: 11; }
+  [data-theme="dark"] .sun, [data-theme="light"] .moon { display: none; }
+  @media (prefers-reduced-motion: reduce) {
+    .slide.on [data-a], .slide.on .arch .nd, .slide.on .arch .lbl, .slide.on .arch .draw { animation: none !important; stroke-dashoffset: 0; opacity: 1 !important; }
+    .arch .dot { display: none; }
+  }
+  @media print { .ui, .prog { display: none; } }
+</style>
+</head>
+<body>
+<div class="prog" id="prog"></div>
+<div id="stage">
+
+<!-- 1. Bìa -->
+<section class="slide cover">
+  <img class="shot" src="img/chatfrog-ui.jpg" alt="Giao diện ChatFrog">
+  <div class="eyebrow" data-a style="--i:0">Mini Project · Điện Toán Đám Mây</div>
+  <h1 data-a style="--i:1">Chat<span style="color:var(--accent)">Frog</span></h1>
+  <p class="lead" data-a style="--i:2;margin-top:20px">Nền tảng chatbot AI tự host: hội thoại thông minh và tạo sinh hình ảnh với Qwen LLM và Qwen Image, triển khai trên VPS ICTU.</p>
+  <div class="meta" data-a style="--i:3">
+    <div><b>Hoàng Đức Toàn</b>DTC235200752</div>
+    <div><b>Hoàng Ngọc Tú</b>DTC235200787</div>
+  </div>
+  <p class="footer-note" data-a="fade" style="--i:5">Lớp CNTT K22H · GVHD: TS. Nguyễn Đức Bình · Thái Nguyên, 11/2026</p>
+</section>
+
+<!-- 2. Bài toán -->
+<section class="slide">
+  <div class="eyebrow">01 · Bài toán</div>
+  <h2>AI thương mại đắt và gửi dữ liệu ra ngoài</h2>
+  <div class="body">
+    <div class="grid c2">
+      <div class="card warn" data-a style="--i:1"><div class="ico" style="color:var(--warn);background:transparent;border:1px solid var(--warn)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v12M9 9.5a3 2 0 0 1 3-1.5 3 2 0 0 1 0 4 3 2 0 0 0 0 4 3 2 0 0 1-3-1.5"/></svg></div>
+        <h3>Chi phí</h3><p>Phí dịch vụ AI cộng dồn theo số thành viên sử dụng.</p></div>
+      <div class="card warn" data-a style="--i:2"><div class="ico" style="color:var(--warn);background:transparent;border:1px solid var(--warn)"><svg viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></div>
+        <h3>Dữ liệu</h3><p>Tài liệu và ảnh nội bộ bị gửi sang bên thứ ba.</p></div>
+    </div>
+    <div class="card" data-a style="--i:4;border-color:var(--accent)">
+      <h3 style="color:var(--accent)">Giải pháp</h3>
+      <p>Tự host <b class="hl">Qwen 3.6</b> (qua Ollama / llama.cpp) và <b class="hl">Qwen Image 2.1</b> (qua ComfyUI) trên GPU <b class="hl">RTX 5090</b> sẵn có. Chi phí vận hành gần như bằng 0, dữ liệu nằm trong hạ tầng do nhóm kiểm soát.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 3. Chức năng, input, output -->
+<section class="slide">
+  <div class="eyebrow">01 · Bài toán</div>
+  <h2>ChatFrog làm được gì?</h2>
+  <div class="body">
+    <div class="grid c4">
+      <div class="card" data-a style="--i:1"><div class="ico"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><h3>Chat</h3><p>Trả lời stream theo từng token (SSE).</p></div>
+      <div class="card" data-a style="--i:2"><div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg></div><h3>Tạo &amp; edit ảnh</h3><p>Sinh và chỉnh ảnh PNG bằng Qwen Image.</p></div>
+      <div class="card" data-a style="--i:3"><div class="ico"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg></div><h3>Đọc tài liệu</h3><p>AI đọc file PDF, DOCX, TXT, CSV đính kèm.</p></div>
+      <div class="card" data-a style="--i:4"><div class="ico"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><h3>Tài khoản</h3><p>Login Google, admin duyệt user.</p></div>
+    </div>
+    <div class="grid c2">
+      <div class="card" data-a style="--i:5"><h3>Input</h3><ul><li>Tài khoản Google, message, custom instructions</li><li>Ảnh PNG/JPEG/WebP đến 10 MB</li><li>Tài liệu PDF/DOCX/TXT/CSV đến 20 MB</li></ul></div>
+      <div class="card" data-a style="--i:6"><h3>Output</h3><ul><li>Câu trả lời stream, lịch sử conversation</li><li>Ảnh PNG do model tạo</li><li>Stats và health của hệ thống cho admin</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. Kiến trúc triển khai (động) -->
+<section class="slide">
+  <div class="eyebrow">02 · Deployment architecture</div>
+  <h2>Chỉ có Cloudflare nhìn thấy Internet</h2>
+  <div class="body" style="gap:14px">
+    <svg class="arch" viewBox="0 0 1160 480" role="img" aria-label="Sơ đồ kiến trúc triển khai">
+      <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="var(--muted)"/></marker>
+        <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="var(--accent)"/></marker></defs>
+      <g class="nd" style="--i:0"><rect class="vps" x="548" y="4" width="610" height="206" rx="20"/><text class="vlbl" x="572" y="196" style="text-anchor:start">VPS ICTU</text></g>
+      <g class="nd" style="--i:0"><rect class="box" x="0" y="30" width="190" height="100" rx="16"/><text x="95" y="76">Browser</text><text class="sub" x="95" y="102">React SPA</text></g>
+      <g class="nd" style="--i:2"><rect class="box cloud" x="270" y="30" width="220" height="100" rx="16"/><text x="380" y="76">Cloudflare</text><text class="sub" x="380" y="102">DNS · proxy · TLS</text></g>
+      <g class="nd" style="--i:4"><rect class="box" x="572" y="30" width="210" height="100" rx="16"/><text x="677" y="76">Nginx</text><text class="sub" x="677" y="102">static + reverse proxy</text></g>
+      <g class="nd" style="--i:6"><rect class="box" x="880" y="30" width="260" height="100" rx="16"/><text x="1010" y="76">chatfrog-api</text><text class="sub" x="1010" y="102">Go · Podman · 127.0.0.1:9260</text></g>
+      <g class="nd" style="--i:9"><rect class="box cloud" x="880" y="360" width="260" height="100" rx="16"/><text x="1010" y="406">MongoDB Atlas</text><text class="sub" x="1010" y="432">DBaaS · M0 Free</text></g>
+      <g class="nd" style="--i:10"><rect class="box" x="520" y="360" width="290" height="100" rx="16"/><text x="665" y="406">GPU server RTX 5090</text><text class="sub" x="665" y="432">Qwen LLM + Qwen Image</text></g>
+
+      <path class="ln draw" pathLength="1" d="M190 80H270" marker-end="url(#ah)" style="--i:1"/><text class="lbl" x="230" y="66" style="--i:1">HTTPS</text>
+      <path class="ln draw" pathLength="1" d="M490 80H572" marker-end="url(#ah)" style="--i:3"/><text class="lbl" x="531" y="66" style="--i:3">HTTP</text>
+      <path class="ln draw" pathLength="1" d="M782 80H880" marker-end="url(#ah)" style="--i:5"/><text class="lbl" x="831" y="66" style="--i:5">/api/*</text>
+      <path class="ln draw" pathLength="1" d="M1010 130V360" marker-end="url(#ah)" style="--i:7"/><text class="lbl" x="1040" y="250" style="--i:7">TLS</text>
+      <path class="ln draw pv" pathLength="1" d="M940 130L740 360" marker-end="url(#ah2)" style="--i:8"/><text class="lbl" x="780" y="236" style="--i:8">Tailscale (private network)</text>
+
+      <!-- gói tin chạy trong line, từ mép block tới mép block (JS) -->
+      <path class="pk" data-n="1" data-speed=".55" d="M198 80H262"/>
+      <path class="pk" data-n="1" data-speed=".55" d="M498 80H564"/>
+      <path class="pk" data-n="2" data-speed=".5" d="M790 80H872"/>
+      <path class="pk" data-n="2" data-speed=".4" d="M1010 138V352"/>
+      <path class="pk" data-n="2" data-speed=".4" d="M934 138L746 352"/>
+    </svg>
+    <p class="note" data-a="fade" style="--i:12">API chỉ listen loopback · GPU server không mở port ra Internet · Cloudflare ẩn IP thật của VPS</p>
+  </div>
+</section>
+
+<!-- 5. Luồng một request chat (động) -->
+<section class="slide" id="s-flow">
+  <div class="eyebrow">02 · Business flow</div>
+  <h2>Một request chat đi qua những đâu?</h2>
+  <div class="body" style="gap:18px">
+    <div class="flow" id="steps">
+      <div class="st" data-a style="--i:1"><div class="bub">1</div><h3>Login</h3><p>Google OAuth,<br>tạo session</p></div>
+      <div class="st" data-a style="--i:2"><div class="bub">2</div><h3>Check</h3><p>Session hợp lệ,<br>user đã được duyệt</p></div>
+      <div class="st" data-a style="--i:3"><div class="bub">3</div><h3>Lưu message</h3><p>MongoDB Atlas</p></div>
+      <div class="st" data-a style="--i:4"><div class="bub">4</div><h3>Gọi model</h3><p>Qua Tailscale,<br>queue theo GPU</p></div>
+      <div class="st" data-a style="--i:5"><div class="bub">5</div><h3>Stream SSE</h3><p>Từng token<br>về browser</p></div>
+      <div class="st" data-a style="--i:6"><div class="bub">6</div><h3>Lưu kết quả</h3><p>Atlas + volume</p></div>
+    </div>
+    <div class="card demo" data-a style="--i:8">
+      <div class="u">Giải thích ngắn gọn SSE là gì?</div>
+      <div class="think" id="think">Đang suy nghĩ…</div>
+      <div class="a"><span id="typed"></span><span class="cur"></span></div>
+    </div>
+    <p class="flowtool" data-a="fade" style="--i:10"><b>Tạo ảnh</b> &nbsp; Qwen gọi tool <code>generate_image</code> <i>→</i> viết lại prompt bằng English <i>→</i> Qwen Image tạo PNG <i>→</i> lưu file và metadata</p>
+  </div>
+</section>
+
+<!-- 6. Data model (động) -->
+<section class="slide">
+  <div class="eyebrow">02 · Data model</div>
+  <h2>Năm collection trên MongoDB Atlas</h2>
+  <div class="body" style="gap:14px">
+    <svg class="arch" viewBox="0 0 1136 400" role="img" aria-label="Sơ đồ collection">
+      <g class="nd" style="--i:0"><rect class="box" x="0" y="20" width="230" height="150" rx="14"/><text class="ttl" x="115" y="48" >User</text><line class="sep" x1="16" x2="214" y1="60" y2="60"/>
+        <text class="fld" x="24" y="84">id</text><text class="fld" x="24" y="104">email, name</text><text class="fld" x="24" y="124">role, status</text><text class="fld" x="24" y="144">settings</text></g>
+      <g class="nd" style="--i:2"><rect class="box" x="453" y="20" width="230" height="150" rx="14"/><text class="ttl" x="568" y="48">Conversation</text><line class="sep" x1="469" x2="667" y1="60" y2="60"/>
+        <text class="fld" x="477" y="84">id, user_id</text><text class="fld" x="477" y="104">title, pinned</text><text class="fld" x="477" y="124">updated_at</text></g>
+      <g class="nd" style="--i:4"><rect class="box" x="906" y="20" width="230" height="150" rx="14"/><text class="ttl" x="1021" y="48">Message</text><line class="sep" x1="922" x2="1120" y1="60" y2="60"/>
+        <text class="fld" x="930" y="84">id, conversation_id</text><text class="fld" x="930" y="104">role, status</text><text class="fld" x="930" y="124">parts[ ]</text><text class="fld" x="930" y="144">usage</text></g>
+      <g class="nd" style="--i:6"><rect class="box" x="0" y="250" width="230" height="130" rx="14"/><text class="ttl" x="115" y="278">Session</text><line class="sep" x1="16" x2="214" y1="290" y2="290"/>
+        <text class="fld" x="24" y="314">id, user_id</text><text class="fld" x="24" y="334">token_hash</text><text class="fld" x="24" y="354">expires_at</text></g>
+      <g class="nd" style="--i:7"><rect class="box cloud" x="906" y="250" width="230" height="130" rx="14"/><text class="ttl" x="1021" y="278">File</text><line class="sep" x1="922" x2="1120" y1="290" y2="290"/>
+        <text class="fld" x="930" y="314">id, user_id</text><text class="fld" x="930" y="334">kind, mime, size</text><text class="fld" x="930" y="354">storage_key</text></g>
+
+      <path class="ln draw" pathLength="1" d="M230 95H453" style="--i:1"/><text class="lbl" x="262" y="84" style="--i:1">1</text><text class="lbl" x="424" y="84" style="--i:1">*</text>
+      <path class="ln draw" pathLength="1" d="M683 95H906" style="--i:3"/><text class="lbl" x="715" y="84" style="--i:3">1</text><text class="lbl" x="877" y="84" style="--i:3">*</text>
+      <path class="ln draw" pathLength="1" d="M115 170V250" style="--i:5"/><text class="lbl" x="132" y="198" style="--i:5">1</text><text class="lbl" x="132" y="238" style="--i:5">*</text>
+      <path class="ln draw" pathLength="1" d="M1021 170V250" style="--i:8"/><text class="lbl" x="1038" y="198" style="--i:8">*</text><text class="lbl" x="1038" y="238" style="--i:8">*</text>
+      <text class="lbl" x="1008" y="218" style="--i:8;text-anchor:end">attach</text>
+
+      <path class="pk" data-n="1" data-speed=".3" d="M238 95H445"/>
+      <path class="pk" data-n="1" data-speed=".3" d="M691 95H898"/>
+    </svg>
+    <p class="note" data-a="fade" style="--i:10">Nội dung file nằm trên volume của VPS, DB chỉ giữ metadata · token của session được hash trước khi lưu</p>
+  </div>
+</section>
+
+<!-- 7. Dịch vụ cloud -->
+<section class="slide">
+  <div class="eyebrow">02 · Cloud services</div>
+  <h2>Mỗi thành phần một dịch vụ chuyên dụng</h2>
+  <div class="body">
+    <div class="tbl" data-a="fade" style="--i:0">
+      <table>
+        <tr><th>Dịch vụ</th><th>Loại</th><th>Vai trò</th><th>Chi phí</th></tr>
+        <tr data-a style="--i:1"><td>VPS ICTU</td><td class="tag">IaaS</td><td>Chạy Nginx, container API, lưu file</td><td>Có sẵn</td></tr>
+        <tr data-a style="--i:2"><td>Namecheap</td><td class="tag">Domain</td><td>Domain naot.me</td><td>Có sẵn</td></tr>
+        <tr data-a style="--i:3"><td>Cloudflare</td><td class="tag">DNSaaS</td><td>DNS, proxy ẩn IP, TLS, chống DDoS</td><td>Free</td></tr>
+        <tr data-a style="--i:4"><td>MongoDB Atlas</td><td class="tag">DBaaS</td><td>User, conversation, message</td><td>Free (M0)</td></tr>
+        <tr data-a style="--i:5"><td>Tailscale</td><td class="tag">NaaS</td><td>Private network VPS ↔ GPU server</td><td>Free</td></tr>
+        <tr data-a style="--i:6"><td>GitHub</td><td class="tag">SaaS</td><td>Source code, nguồn deploy</td><td>Free</td></tr>
+        <tr data-a style="--i:7"><td>GPU RTX 5090</td><td class="tag">Self-host</td><td>Qwen LLM và Qwen Image</td><td>Có sẵn</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 8. Cấu hình và bảo mật -->
+<section class="slide">
+  <div class="eyebrow">02 · Configuration &amp; security</div>
+  <h2>Hai máy, nhiều lớp bảo vệ</h2>
+  <div class="body">
+    <div class="grid c2" style="align-items:start">
+      <div class="tbl" data-a style="--i:1;padding-top:16px">
+        <table>
+          <tr><th></th><th>VPS ICTU</th><th>GPU server</th></tr>
+          <tr><td>OS</td><td>Ubuntu 22.04</td><td>Ubuntu 26.04</td></tr>
+          <tr><td>CPU</td><td>16 vCPU</td><td>24 CPU</td></tr>
+          <tr><td>RAM</td><td>67 GiB</td><td>128 GiB</td></tr>
+          <tr><td>Disk</td><td>687 GB</td><td>256 GB + 2 TB</td></tr>
+          <tr><td>GPU</td><td>Không</td><td>RTX 5090 · 32 GB</td></tr>
+        </table>
+      </div>
+      <div class="card" data-a style="--i:2"><h3>Security</h3>
+        <ul>
+          <li data-a style="--i:3">Cloudflare ẩn IP và tự cấp TLS</li>
+          <li data-a style="--i:4">Container API chỉ listen <code>127.0.0.1</code>, đi qua Nginx</li>
+          <li data-a style="--i:5">UFW chỉ mở port 22 và 80</li>
+          <li data-a style="--i:6">SSH bằng key, không dùng password</li>
+          <li data-a style="--i:7">Rate limit 10 request/phút cho login</li>
+          <li data-a style="--i:8">Atlas: user riêng, quyền giới hạn, kết nối TLS</li>
+        </ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- 9. Quy trình deploy -->
+<section class="slide">
+  <div class="eyebrow">02 · Deployment</div>
+  <h2>Sáu bước từ máy trắng đến HTTPS</h2>
+  <div class="body">
+    <div class="grid c3">
+      <div class="card" data-a style="--i:1"><div class="n">1</div><h3>Chuẩn bị VPS</h3><p>SSH key, Git, Make, Nginx, Node 24, Podman.</p><code class="code">ssh-copy-id user@vps</code></div>
+      <div class="card" data-a style="--i:2"><div class="n">2</div><h3>Domain và DNS</h3><p>Trỏ nameserver về Cloudflare, thêm record A bật Proxied.</p><code class="code">dig +short chat.naot.me</code></div>
+      <div class="card" data-a style="--i:3"><div class="n">3</div><h3>MongoDB Atlas</h3><p>Cluster M0 Singapore, user riêng, lấy MONGO_URI.</p><code class="code">mongodb+srv://…</code></div>
+      <div class="card" data-a style="--i:4"><div class="n">4</div><h3>Tailscale</h3><p>Nối VPS với GPU server, gọi model qua IP riêng.</p><code class="code">sudo tailscale up</code></div>
+      <div class="card" data-a style="--i:5"><div class="n">5</div><h3>Deploy app</h3><p>Tạo .env, build container, check healthz, build web.</p><code class="code">make up &amp;&amp; make build-web</code></div>
+      <div class="card" data-a style="--i:6"><div class="n">6</div><h3>Nginx, UFW, HTTPS</h3><p>Reverse proxy cho /api, mở port 22 và 80, TLS do Cloudflare.</p><code class="code">make nginx-link</code></div>
+    </div>
+  </div>
+</section>
+
+<!-- 10. Kết quả (thư viện ảnh động) -->
+<section class="slide" id="s-gal">
+  <div class="eyebrow">03 · Kết quả đạt được</div>
+  <h2>Hệ thống chạy thật tại chat.naot.me</h2>
+  <div class="body" style="flex-direction:row;align-items:center;gap:32px">
+    <div style="flex:1.45;--i:1" data-a="pop">
+      <div class="gal" id="gal">
+        <img class="shot on" src="img/chat-stream.jpg" alt="Chat stream" data-cap="Chat stream, hiển thị reasoning">
+        <img class="shot" src="img/image-gen.jpg" alt="Tạo ảnh" data-cap="Tạo ảnh từ mô tả văn bản">
+        <img class="shot" src="img/doc-chat.jpg" alt="Đọc tài liệu" data-cap="Hỏi đáp trên tài liệu đính kèm">
+        <img class="shot" src="img/admin-users.jpg" alt="Admin" data-cap="Trang admin quản lý user">
+      </div>
+      <div class="cap"><span id="galcap"></span><span class="dots" id="gdots"><i class="on"></i><i></i><i></i><i></i></span></div>
+    </div>
+    <div class="card" data-a style="--i:3;flex:1">
+      <h3>Đã hoàn thành</h3>
+      <ul>
+        <li>Truy cập HTTPS qua domain thật</li>
+        <li>Login Google, admin duyệt user</li>
+        <li>Chat stream, tạo và edit ảnh, đọc tài liệu</li>
+        <li>Lưu conversation trên MongoDB Atlas</li>
+        <li>Admin: stats, health và switch bật/tắt từng model</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 11. Kết luận -->
+<section class="slide">
+  <div class="eyebrow">04 · Kết luận &amp; hướng phát triển</div>
+  <h2>Chạy ổn định, sẵn sàng mở rộng</h2>
+  <div class="body">
+    <div class="grid c3">
+      <div class="card" data-a style="--i:1"><h3>Kết quả</h3><ul>
+        <li>Chạy thật tại chat.naot.me qua HTTPS</li>
+        <li>Kết hợp 6 dịch vụ cloud, chi phí gần như 0 đồng</li>
+        <li>Đủ chức năng chat, tạo ảnh, đọc tài liệu</li></ul></div>
+      <div class="card warn" data-a style="--i:2"><h3>Hạn chế</h3><ul>
+        <li>Chỉ login bằng Google</li>
+        <li>Cloudflare → VPS chạy HTTP (mode Flexible)</li>
+        <li>Model không phản hồi thì báo lỗi, user phải gửi lại</li></ul></div>
+      <div class="card" data-a style="--i:3"><h3>Hướng phát triển</h3><ul>
+        <li>Origin Certificate, mode Full (strict)</li>
+        <li>CI/CD, backup DB định kỳ</li>
+        <li>Monitoring với Prometheus, Grafana</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- 12. Live demo (nhúng trang chat) -->
+<section class="slide" id="s-demo">
+  <div class="eyebrow">Live demo</div>
+  <h2>chat.naot.me</h2>
+  <div class="body" style="flex-direction:row;gap:28px;align-items:stretch;padding:14px 0 6px">
+    <div class="frame" data-a="pop" style="--i:1">
+      <div class="frame-bar"><i></i><i></i><i></i><span>chat.naot.me</span></div>
+      <div class="fbody"><iframe id="demo" title="ChatFrog live demo" data-path="/?embed=1" allow="clipboard-write"></iframe></div>
+      <p class="frame-off" id="demo-off">Mở deck qua https://chat.naot.me/presentations/ để thấy chat chạy trực tiếp.</p>
+    </div>
+    <div class="side">
+      <div data-a style="--i:2"><h3>Luồng demo</h3><ul class="plain">
+        <li>Login Google, chat và xem stream</li>
+        <li>Tạo ảnh, đính kèm tài liệu để AI đọc</li>
+        <li>Error case: model không phản hồi, gửi lại</li>
+        <li>Console: Cloudflare, Atlas, <code>tailscale status</code></li></ul></div>
+      <div data-a style="--i:3"><h3>Phân công</h3>
+        <p><b class="hl">Hoàng Đức Toàn · 50%</b><br>Nhóm trưởng, Frontend, Backend, DevOps</p>
+        <p style="margin-top:10px"><b class="hl">Hoàng Ngọc Tú · 50%</b><br>Phân tích, báo cáo, kiểm thử, slide</p></div>
+      <p data-a style="--i:5;color:var(--accent);font-size:22px;font-weight:750;letter-spacing:-.01em;margin-top:auto">Cảm ơn thầy và các bạn đã lắng nghe!</p>
+    </div>
+  </div>
+</section>
+
+<div class="footer"><span id="ftxt">ChatFrog · Mini Project Điện Toán Đám Mây</span><span id="fpos"></span></div>
+</div>
+
+<div class="ui tr-ui">
+  <button class="btn" id="theme" aria-label="Đổi giao diện sáng/tối" title="Sáng / tối (T)">
+    <svg class="sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+    <svg class="moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
+  </button>
+  <button class="btn" id="full" aria-label="Toàn màn hình" title="Toàn màn hình (F)"><svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
+</div>
+<div class="ui bot">
+  <button class="btn" id="prev" aria-label="Slide trước"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></button>
+  <span id="pos"></span>
+  <button class="btn" id="next" aria-label="Slide sau"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button>
+</div>
+
+<script>
+  var NS = 'http://www.w3.org/2000/svg';
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var stage = document.getElementById('stage'), slides = [].slice.call(document.querySelectorAll('.slide')), i = 0;
+  var timers = [], raf = 0;
+
+  function fit() {
+    var s = Math.min(innerWidth / 1280, innerHeight / 720);
+    stage.style.transform = 'translate(-50%,-50%) scale(' + s + ')';
+  }
+
+  /* Gói tin chạy dọc các đường .flow của slide đang hiện */
+  function startFlows(slide) {
+    if (reduce) return;
+    var items = [];
+    [].forEach.call(slide.querySelectorAll('path.pk'), function (p) {
+      var svg = p.ownerSVGElement, len = p.getTotalLength(), n = +p.dataset.n || 1, sp = +p.dataset.speed || .4;
+      for (var k = 0; k < n; k++) {
+        var c = document.createElementNS(NS, 'circle');
+        c.setAttribute('r', 5); c.setAttribute('class', 'dot'); c.style.opacity = 0;
+        svg.appendChild(c); items.push({ c: c, p: p, len: len, off: k / n, sp: sp });
+      }
+    });
+    var t0 = performance.now() + 1800; // chờ sơ đồ vẽ xong
+    (function tick(now) {
+      var t = Math.max(0, (now - t0) / 1000);
+      items.forEach(function (it) {
+        var f = (t * it.sp + it.off) % 1, pt = it.p.getPointAtLength(f * it.len);
+        it.c.setAttribute('cx', pt.x); it.c.setAttribute('cy', pt.y);
+        it.c.style.opacity = t > 0 ? Math.sin(f * Math.PI) : 0;
+      });
+      raf = requestAnimationFrame(tick);
+    })(performance.now());
+    timers.push(function () { items.forEach(function (it) { it.c.remove(); }); });
+  }
+
+  /* Luồng chat: sáng dần từng bước, think rồi gõ câu trả lời, giữ lại vài giây rồi lặp */
+  var TEXT = 'SSE (Server-Sent Events) là cách server đẩy dữ liệu về browser qua một kết nối HTTP duy nhất. ChatFrog dùng SSE để stream từng token của câu trả lời, nên chữ hiện ra ngay khi model sinh ra.';
+  function startFlow() {
+    var steps = [].slice.call(document.querySelectorAll('#steps .st')),
+        typed = document.getElementById('typed'), think = document.getElementById('think');
+    function paint(act) {
+      steps.forEach(function (s, j) { s.classList.toggle('done', j < act); s.classList.toggle('act', j === act); });
+    }
+    if (reduce) { paint(steps.length); typed.textContent = TEXT; return; }
+    var tm = [], iv = 0, dead = false;
+    function later(f, ms) { tm.push(setTimeout(f, ms)); }
+    function run() {
+      if (dead) return;
+      paint(-1); typed.textContent = ''; think.classList.remove('on');
+      steps.forEach(function (_, j) { later(function () { paint(j); }, 700 + j * 1000); });
+      later(function () { think.classList.add('on'); }, 700 + 3 * 1000);
+      later(function () {
+        think.classList.remove('on');
+        var pos = 0;
+        iv = setInterval(function () {
+          typed.textContent = TEXT.slice(0, ++pos);
+          if (pos >= TEXT.length) { clearInterval(iv); later(function () { paint(steps.length); }, 600); later(run, 4200); }
+        }, 26);
+      }, 700 + 4 * 1000);
+    }
+    run();
+    timers.push(function () { dead = true; clearInterval(iv); tm.forEach(clearTimeout); });
+  }
+
+  /* Live demo: nhúng trang chat (cùng origin), chỉ nạp khi vào slide */
+  function startDemo() {
+    var f = document.getElementById('demo'), box = f.closest('.frame'), ok = /^https?:$/.test(location.protocol);
+    box.classList.toggle('off', !ok);
+    if (ok && !f.src) f.src = location.origin + f.dataset.path;
+  }
+
+  /* Thư viện ảnh */
+  function startGal() {
+    var imgs = [].slice.call(document.querySelectorAll('#gal img')), dots = [].slice.call(document.querySelectorAll('#gdots i')),
+        cap = document.getElementById('galcap'), n = 0;
+    function set(j) {
+      n = j % imgs.length;
+      imgs.forEach(function (m, x) { m.classList.toggle('on', x === n); dots[x].classList.toggle('on', x === n); });
+      cap.textContent = imgs[n].dataset.cap;
+    }
+    set(0);
+    if (reduce) return;
+    var a = setInterval(function () { set(n + 1); }, 3600);
+    timers.push(function () { clearInterval(a); });
+  }
+
+  function enter(slide) {
+    timers.forEach(function (f) { f(); }); timers = []; cancelAnimationFrame(raf);
+    if (slide.querySelector('path.pk')) startFlows(slide);
+    if (slide.id === 's-flow') startFlow();
+    if (slide.id === 's-gal') startGal();
+    if (slide.id === 's-demo') startDemo();
+  }
+
+  function show(n) {
+    i = Math.min(Math.max(n, 0), slides.length - 1);
+    slides.forEach(function (s, k) { s.classList.toggle('on', k === i); });
+    var t = (i + 1) + ' / ' + slides.length;
+    document.getElementById('pos').textContent = t;
+    document.getElementById('fpos').textContent = i === 0 ? '' : t;
+    document.getElementById('ftxt').style.visibility = i === 0 ? 'hidden' : 'visible';
+    document.getElementById('prog').style.width = ((i + 1) / slides.length * 100) + '%';
+    try { history.replaceState(null, '', '#' + (i + 1)); } catch (e) {}
+    enter(slides[i]);
+  }
+  function setTheme(t) {
+    document.documentElement.dataset.theme = t;
+    try { localStorage.setItem('slide-theme', t); } catch (e) {}
+  }
+  function toggleTheme() { setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'); }
+  function toggleFull() { document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen(); }
+
+  document.getElementById('prev').onclick = function () { show(i - 1); };
+  document.getElementById('next').onclick = function () { show(i + 1); };
+  document.getElementById('theme').onclick = toggleTheme;
+  document.getElementById('full').onclick = toggleFull;
+  addEventListener('resize', fit);
+  addEventListener('keydown', function (e) {
+    var k = e.key;
+    if (k === 'ArrowRight' || k === 'PageDown' || k === ' ' || k === 'Enter') { e.preventDefault(); show(i + 1); }
+    else if (k === 'ArrowLeft' || k === 'PageUp' || k === 'Backspace') { e.preventDefault(); show(i - 1); }
+    else if (k === 'Home') show(0);
+    else if (k === 'End') show(slides.length - 1);
+    else if (k === 't' || k === 'T') toggleTheme();
+    else if (k === 'f' || k === 'F') toggleFull();
+  });
+  var x0 = null;
+  addEventListener('touchstart', function (e) { x0 = e.touches[0].clientX; });
+  addEventListener('touchend', function (e) {
+    if (x0 === null) return;
+    var dx = e.changedTouches[0].clientX - x0; x0 = null;
+    if (Math.abs(dx) > 40) show(i + (dx < 0 ? 1 : -1));
+  });
+
+  fit();
+  show((parseInt(location.hash.slice(1), 10) || 1) - 1);
+</script>
+</body>
+</html>

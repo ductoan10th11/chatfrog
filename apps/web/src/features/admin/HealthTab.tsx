@@ -1,18 +1,22 @@
 import { CircleAlert, CircleCheck, RefreshCw } from 'lucide-react'
 import { ErrorState } from '@/components/ErrorState'
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
 import { S } from '@/lib/strings'
 import { cn } from '@/lib/utils'
-import type { Health } from '@/types/api'
+import type { Health, ModelKey } from '@/types/api'
 import { Badge } from './Badge'
 import { formatDateTime, formatLatency } from './format'
-import { useAdminHealth } from './queries'
+import { useAdminHealth, useSetModelEnabled } from './queries'
 
 const T = S.admin.system
+const title = (kind: string, profile: string) => `${kind} · ${T.profiles[profile] ?? profile}`
 
 export function HealthTab() {
   const health = useAdminHealth()
+  const toggle = useSetModelEnabled()
+  const onToggle = (key: ModelKey) => (enabled: boolean) => toggle.mutate({ key, enabled })
 
   return (
     <div className="space-y-4">
@@ -37,8 +41,22 @@ export function HealthTab() {
         <ErrorState message={T.loadError} onRetry={() => health.refetch()} />
       ) : (
         <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-card">
-          <ServiceRow title={T.llm} service={health.data.llm} />
-          <ServiceRow title={T.image} service={health.data.image} />
+          {health.data.llms.map((m) => (
+            <ServiceRow
+              key={m.key}
+              title={title(T.llm, m.profile)}
+              service={m}
+              onToggle={onToggle(m.key)}
+            />
+          ))}
+          {health.data.images.map((m) => (
+            <ServiceRow
+              key={m.key}
+              title={title(T.image, m.profile)}
+              service={m}
+              onToggle={onToggle(m.key)}
+            />
+          ))}
           <ServiceRow title={T.mongo} service={health.data.mongo} />
         </ul>
       )}
@@ -62,16 +80,26 @@ function StatusBadge({ ok }: { ok: boolean }) {
 function ServiceRow({
   title,
   service,
+  onToggle,
 }: {
   title: string
-  service: Health['llm'] | Health['mongo']
+  service: Health['llms'][number] | Health['mongo']
+  onToggle?: (enabled: boolean) => void
 }) {
   const detailed = 'model' in service ? service : null
   return (
     <li aria-label={title} className="flex flex-col gap-1.5 px-4 py-3 text-sm">
       <div className="flex items-center justify-between gap-3">
         <h3 className="font-medium">{title}</h3>
-        <StatusBadge ok={service.ok} />
+        <div className="flex items-center gap-3">
+          <StatusBadge ok={service.ok} />
+          <Switch
+            aria-label={`${T.enable} ${title}`}
+            checked={detailed ? detailed.enabled : true}
+            disabled={!onToggle}
+            onCheckedChange={onToggle}
+          />
+        </div>
       </div>
       {detailed && (
         <dl className="flex flex-wrap gap-x-5 gap-y-1 text-xs">

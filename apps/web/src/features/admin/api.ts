@@ -1,5 +1,5 @@
 import { api } from '@/lib/api'
-import type { AdminUser, Health, Page, Stats } from '@/types/api'
+import type { AdminUser, Health, ModelKey, Page, Stats } from '@/types/api'
 
 export type StatusFilter = '' | AdminUser['status']
 
@@ -19,3 +19,6 @@ export const fetchStats = (from: string, to: string) =>
   api<Stats>('/api/admin/stats', { query: { from, to } })
 
 export const fetchHealth = () => api<Health>('/api/admin/health')
+
+export const setModelEnabled = (key: ModelKey, enabled: boolean) =>
+  api<Health>(`/api/admin/models/${key}`, { method: 'PUT', body: { enabled } })

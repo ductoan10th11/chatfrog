@@ -50,6 +50,7 @@ func (s *Service) systemPrompt(u *store.User) string {
 // inlined, images sent to the vision model only for the latest user message, oldest
 // messages trimmed to fit the context window.
 func (s *Service) buildContext(ctx context.Context, t *Turn) ([]provider.ChatMessage, error) {
+	lim := s.limits()
 	history, err := s.store.ListMessages(ctx, t.Conversation.ID, t.Assistant.ID)
 	if err != nil {
 		return nil, err
@@ -81,7 +82,7 @@ func (s *Service) buildContext(ctx context.Context, t *Turn) ([]provider.ChatMes
 	for i, m := range history {
 		switch m.Role {
 		case store.RoleUser:
-			msgs = append(msgs, s.userMessage(ctx, &m, byID, i == lastUser && s.cfg.LLMVision))
+			msgs = append(msgs, s.userMessage(ctx, &m, byID, i == lastUser && lim.Vision, lim.VisionMaxPx))
 		case store.RoleAssistant:
 			if text := assistantText(&m); text != "" && m.Status != store.MsgStreaming {
 				msgs = append(msgs, provider.ChatMessage{Role: "assistant", Content: text})
@@ -90,11 +91,11 @@ func (s *Service) buildContext(ctx context.Context, t *Turn) ([]provider.ChatMes
 	}
 
 	system := provider.ChatMessage{Role: "system", Content: s.systemPrompt(t.User)}
-	budget := s.cfg.LLMContextTokens - s.cfg.LLMMaxOutputTokens - estimate(system) - toolsTokens
+	budget := lim.Context - lim.MaxOutput - estimate(system) - toolsTokens
 	return append([]provider.ChatMessage{system}, trimToBudget(msgs, budget)...), nil
 }
 
-func (s *Service) userMessage(ctx context.Context, m *store.Message, byID map[string]*store.File, vision bool) provider.ChatMessage {
+func (s *Service) userMessage(ctx context.Context, m *store.Message, byID map[string]*store.File, vision bool, maxPx int) provider.ChatMessage {
 	var sb strings.Builder
 	var images []provider.ContentPart
 	for _, p := range m.Parts {
@@ -110,7 +111,7 @@ func (s *Service) userMessage(ctx context.Context, m *store.Message, byID map[st
 			if f.IsImage() {
 				fmt.Fprintf(&sb, "[image id=%s]\n", f.ID.Hex())
 				if vision {
-					if part, ok := s.visionPart(ctx, f); ok {
+					if part, ok := s.visionPart(ctx, f, maxPx); ok {
 						images = append(images, part)
 					}
 				}
@@ -133,10 +134,10 @@ func (s *Service) userMessage(ctx context.Context, m *store.Message, byID map[st
 	return provider.ChatMessage{Role: "user", Content: content}
 }
 
-func (s *Service) visionPart(ctx context.Context, f *store.File) (provider.ContentPart, bool) {
+func (s *Service) visionPart(ctx context.Context, f *store.File, maxPx int) (provider.ContentPart, bool) {
 	data, err := s.storage.Read(f.StorageKey)
 	if err == nil {
-		data, err = files.FitJPEG(data, s.cfg.VisionMaxPx, 85)
+		data, err = files.FitJPEG(data, maxPx, 85)
 	}
 	if err != nil {
 		slog.WarnContext(ctx, "vision image", "file", f.ID.Hex(), "err", err)

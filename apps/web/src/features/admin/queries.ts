@@ -8,8 +8,15 @@ import {
 import { toast } from 'sonner'
 import { errorMessage } from '@/lib/api'
 import { S } from '@/lib/strings'
-import type { AdminUser, Page } from '@/types/api'
-import { fetchHealth, fetchStats, listUsers, patchUser, type UserListParams } from './api'
+import type { AdminUser, ModelKey, Page } from '@/types/api'
+import {
+  fetchHealth,
+  fetchStats,
+  listUsers,
+  patchUser,
+  setModelEnabled,
+  type UserListParams,
+} from './api'
 
 export const adminKeys = {
   users: (p: UserListParams) => ['admin', 'users', p] as const,
@@ -57,3 +64,13 @@ export const useAdminStats = (from: string, to: string) =>
   useQuery({ queryKey: adminKeys.stats(from, to), queryFn: () => fetchStats(from, to) })
 
 export const useAdminHealth = () => useQuery({ queryKey: adminKeys.health, queryFn: fetchHealth })
+
+export function useSetModelEnabled() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ key, enabled }: { key: ModelKey; enabled: boolean }) =>
+      setModelEnabled(key, enabled),
+    onSuccess: (health) => qc.setQueryData(adminKeys.health, health),
+    onError: (e) => toast.error(errorMessage(e)),
+  })
+}
