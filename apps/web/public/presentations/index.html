@@ -75,6 +75,28 @@
   .code { display: block; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
     padding: 8px 12px; color: var(--fg); margin-top: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+  .card .hd { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; } .card .hd .n { margin: 0; flex: none; } .card .hd h3 { margin: 0; font-size: 21px; }
+  .term { font-family: "JetBrains Mono", "DejaVu Sans Mono", Consolas, monospace; font-size: 13.5px; line-height: 1.6; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-top: 16px; color: var(--fg); white-space: pre; overflow: hidden; }
+  .steps2 { align-items: stretch; } .steps2 .card { padding: 26px 28px; } .steps2 .card li { font-size: 18px; } .steps2 .card ul { gap: 11px; } .steps2 .term { font-size: 15px; margin-top: 20px; }
+  .card.def { border-color: var(--accent); } .card.def { padding: 12px 22px; } .card.def p { font-size: 18px; color: var(--fg); }
+  .card.tight { padding: 12px 20px; } .card.tight h3 { font-size: 17px; margin-bottom: 2px; } .card.tight p { font-size: 15px; }
+  .io { display: grid; grid-template-columns: 1fr 64px 1.1fr 64px 1fr; align-items: stretch; }
+  .io .col { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px 20px 14px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 8px; }
+  .io .col.mid { border-color: var(--accent); }
+  .io h4 { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+  .io .it { border-top: 1px solid var(--border); padding-top: 8px; display: grid; gap: 2px; }
+  .io .it b { font-size: 17px; color: var(--fg); } .io .it span { font-size: 14.5px; color: var(--muted); line-height: 1.4; }
+  .io .lnk { position: relative; align-self: center; height: 2px; background: var(--border); }
+  .io .lnk::after { content: ""; position: absolute; right: -1px; top: -4px; border: 5px solid transparent; border-left: 8px solid var(--muted); border-right: 0; }
+  .io .lnk i { position: absolute; top: -3px; left: 0; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: iorun 1.8s linear infinite; }
+  @keyframes iorun { from { left: 0; opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } to { left: calc(100% - 14px); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .io .lnk i { animation: none; left: 40%; } }
+  .pics .fg { margin: 0; } .fg img { width: 100%; height: auto; } .pics .fg img { aspect-ratio: 16 / 10; object-fit: cover; } .fg figcaption { margin-top: 10px; display: grid; gap: 2px; }
+  .fg figcaption b { font-size: 18px; } .fg figcaption span { font-size: 15.5px; color: var(--muted); line-height: 1.4; }
+  .pics.c3 .fg figcaption b { font-size: 17px; } .pics.c3 .fg figcaption span { font-size: 14.5px; }
+  .steps6 { display: grid; gap: 16px; } .steps6 .card { padding: 20px 24px; } .steps6 .card h3 { font-size: 22px; } .steps6 .card p { font-size: 17px; }
+  .big { align-items: stretch; } .big .card { padding: 40px 36px; } .big .card h3 { font-size: 28px; white-space: nowrap; margin-bottom: 22px; } .big .card li { font-size: 23px; line-height: 1.45; padding-left: 24px; } .big .card ul { gap: 22px; } .big .card li::before { top: .65em; width: 8px; height: 8px; }
+  table.kt td:first-child { width: 48px; text-align: center; color: var(--accent); } table.kt th:first-child { text-align: center; } table.kt td:nth-child(2) { color: var(--fg); font-weight: 600; }
   table { width: 100%; border-collapse: collapse; }
   th { text-align: left; font-size: 12.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--faint); font-weight: 600; padding: 0 16px 10px; }
   td { padding: 11px 16px; font-size: 17px; border-top: 1px solid var(--border); color: var(--muted); }
@@ -138,7 +160,7 @@
   /* ảnh */
   .shot { border-radius: 14px; border: 1px solid var(--border); box-shadow: var(--shadow); display: block; width: 100%; }
   .gal { position: relative; aspect-ratio: 3042 / 2070; }
-  .gal img { position: absolute; inset: 0; opacity: 0; transition: opacity .7s; }
+  .gal img { position: absolute; inset: 0; opacity: 0; transition: opacity .45s; }
   .gal img.on { opacity: 1; }
   .cap { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; font-size: 15px; color: var(--muted); }
   .dots { display: flex; gap: 6px; } .dots i { width: 22px; height: 4px; border-radius: 4px; background: var(--border); transition: all .3s; }
@@ -164,7 +186,7 @@
   /* bìa */
   .cover { justify-content: center; }
   .cover .lead { max-width: 560px; }
-  .cover .shot { position: absolute; right: -150px; bottom: 90px; width: 690px; transform: rotate(-3deg); opacity: .95; }
+  .cover .shot { position: absolute; right: -190px; bottom: 80px; width: 620px; transform: rotate(-3deg); opacity: .95; }
   .slide.on.cover .shot { animation: coverin 1s cubic-bezier(.2,.7,.2,1) .3s both; }
   @keyframes coverin { from { opacity: 0; transform: translateX(80px) rotate(-3deg); } }
   .meta { display: flex; gap: 32px; margin-top: 34px; }
@@ -196,7 +218,8 @@
   <img class="shot" src="img/chatfrog-ui.jpg" alt="Giao diện ChatFrog">
   <div class="eyebrow" data-a style="--i:0">Mini Project · Điện Toán Đám Mây</div>
   <h1 data-a style="--i:1">Chat<span style="color:var(--accent)">Frog</span></h1>
-  <p class="lead" data-a style="--i:2;margin-top:20px">Nền tảng chatbot AI tự host: hội thoại thông minh và tạo sinh hình ảnh với Qwen LLM và Qwen Image, triển khai trên VPS ICTU.</p>
+  <p class="lead" data-a style="--i:2;margin-top:24px;max-width:740px;font-size:20px;line-height:1.5;font-weight:600;letter-spacing:.005em;color:color-mix(in srgb,var(--fg) 72%,var(--bg))">XÂY DỰNG VÀ TRIỂN KHAI NỀN TẢNG CHATBOT AI CHATFROG HỖ TRỢ HỘI THOẠI THÔNG MINH VÀ TẠO SINH HÌNH ẢNH, TÍCH HỢP QWEN LLM VÀ QWEN IMAGE GENERATION TRÊN MÁY CHỦ ẢO (VPS) ICTU</p>
+  <p class="lead" data-a style="--i:3;margin-top:12px;max-width:740px;font-size:18px;font-style:italic;color:var(--muted)">Sử dụng Namecheap Domain, Cloudflare DNSaaS, MongoDB Atlas DBaaS, Tailscale NaaS và GitHub SaaS</p>
   <div class="meta" data-a style="--i:3">
     <div><b>Hoàng Đức Toàn</b>DTC235200752</div>
     <div><b>Hoàng Ngọc Tú</b>DTC235200787</div>
@@ -206,7 +229,7 @@
 
 <!-- 2. Bài toán -->
 <section class="slide">
-  <div class="eyebrow">01 · Bài toán</div>
+  <div class="eyebrow">01 · Bài toán · Vấn đề</div>
   <h2>AI thương mại đắt và gửi dữ liệu ra ngoài</h2>
   <div class="body">
     <div class="grid c2">
@@ -222,27 +245,94 @@
   </div>
 </section>
 
-<!-- 3. Chức năng, input, output -->
+<!-- 2b. Nội hàm + Input / Output -->
 <section class="slide">
-  <div class="eyebrow">01 · Bài toán</div>
-  <h2>ChatFrog làm được gì?</h2>
-  <div class="body">
-    <div class="grid c4">
-      <div class="card" data-a style="--i:1"><div class="ico"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><h3>Chat</h3><p>Trả lời stream theo từng token (SSE).</p></div>
-      <div class="card" data-a style="--i:2"><div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg></div><h3>Tạo &amp; edit ảnh</h3><p>Sinh và chỉnh ảnh PNG bằng Qwen Image.</p></div>
-      <div class="card" data-a style="--i:3"><div class="ico"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg></div><h3>Đọc tài liệu</h3><p>AI đọc file PDF, DOCX, TXT, CSV đính kèm.</p></div>
-      <div class="card" data-a style="--i:4"><div class="ico"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><h3>Tài khoản</h3><p>Login Google, admin duyệt user.</p></div>
+  <div class="eyebrow">01 · Bài toán · Nội hàm, Input, Output</div>
+  <h2>ChatFrog là gì, vào gì, ra gì?</h2>
+  <div class="body" style="gap:12px;justify-content:flex-start;padding-top:8px">
+    <div class="card def" data-a style="--i:1"><p>Web app <b class="hl">chatbot AI tự host</b>: login Google, chat với <b class="hl">Qwen LLM</b>, tạo và edit ảnh bằng <b class="hl">Qwen Image</b>, đính kèm tài liệu để AI đọc. Model chạy trên GPU của nhóm, dữ liệu không gửi cho bên thứ ba.</p></div>
+    <div class="io">
+      <div class="col" data-a style="--i:2"><h4>Input</h4>
+        <div class="it"><b>Tài khoản Google</b><span>Login OAuth</span></div>
+        <div class="it"><b>Message văn bản</b><span>Kèm custom instructions</span></div>
+        <div class="it"><b>Ảnh</b><span>PNG, JPEG, WebP · ≤ 10 MB</span></div>
+        <div class="it"><b>Tài liệu</b><span>PDF, DOCX, TXT, CSV · ≤ 20 MB</span></div>
+      </div>
+      <div class="lnk" data-a="fade" style="--i:3"><i></i></div>
+      <div class="col mid" data-a="pop" style="--i:3"><h4>ChatFrog</h4>
+        <div class="it"><b>Qwen LLM</b><span>Hiểu, trả lời, đọc ảnh (vision)</span></div>
+        <div class="it"><b>Tool <code>generate_image</code></b><span>Prompt English → Qwen Image</span></div>
+        <div class="it"><b>Trích text từ file</b><span>Cắt vừa context 32K</span></div>
+        <div class="it"><b>MongoDB Atlas</b><span>Lưu conversation, metadata</span></div>
+      </div>
+      <div class="lnk" data-a="fade" style="--i:5"><i></i></div>
+      <div class="col" data-a style="--i:5"><h4>Output</h4>
+        <div class="it"><b>Câu trả lời stream</b><span>Từng token qua SSE, kèm reasoning</span></div>
+        <div class="it"><b>Ảnh PNG</b><span>Do Qwen Image tạo hoặc edit</span></div>
+        <div class="it"><b>Lịch sử conversation</b><span>Xem lại, tìm, ghim</span></div>
+        <div class="it"><b>Stats và health</b><span>Dành cho admin</span></div>
+      </div>
     </div>
     <div class="grid c2">
-      <div class="card" data-a style="--i:5"><h3>Input</h3><ul><li>Tài khoản Google, message, custom instructions</li><li>Ảnh PNG/JPEG/WebP đến 10 MB</li><li>Tài liệu PDF/DOCX/TXT/CSV đến 20 MB</li></ul></div>
-      <div class="card" data-a style="--i:6"><h3>Output</h3><ul><li>Câu trả lời stream, lịch sử conversation</li><li>Ảnh PNG do model tạo</li><li>Stats và health của hệ thống cho admin</li></ul></div>
+      <div class="card tight" data-a style="--i:6"><h3>User</h3><p>Chat, tạo và edit ảnh, hỏi đáp trên tài liệu</p></div>
+      <div class="card tight" data-a style="--i:7"><h3>Admin</h3><p>Duyệt user, xem stats và health</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 7. Chọn dịch vụ -->
+<section class="slide">
+  <div class="eyebrow">02 · Chọn dịch vụ</div>
+  <h2>Mỗi thành phần một dịch vụ chuyên dụng</h2>
+  <div class="body">
+    <div class="tbl" data-a="fade" style="--i:0">
+      <table>
+        <tr><th>Dịch vụ</th><th>Loại</th><th>Lý do chọn</th><th>Chi phí</th></tr>
+        <tr data-a style="--i:1"><td>VPS ICTU</td><td class="tag">IaaS</td><td>Cấu hình lớn, IP tĩnh, toàn quyền root</td><td>Có sẵn</td></tr>
+        <tr data-a style="--i:2"><td>Namecheap</td><td class="tag">Domain</td><td>Domain thật <code>naot.me</code></td><td>Có sẵn</td></tr>
+        <tr data-a style="--i:3"><td>Cloudflare</td><td class="tag">DNSaaS</td><td>TLS, ẩn IP, chống DDoS miễn phí</td><td>Free</td></tr>
+        <tr data-a style="--i:4"><td>MongoDB Atlas</td><td class="tag">DBaaS</td><td>Dữ liệu hội thoại lồng nhau hợp document model</td><td>Free (M0)</td></tr>
+        <tr data-a style="--i:5"><td>Tailscale</td><td class="tag">NaaS</td><td>Private network mã hóa, GPU không lộ ra Internet</td><td>Free</td></tr>
+        <tr data-a style="--i:6"><td>GitHub</td><td class="tag">SaaS</td><td>Quản lý version, deploy lặp lại bằng <code>git pull</code></td><td>Free</td></tr>
+        <tr data-a style="--i:7"><td>GPU RTX 5090</td><td class="tag">Self-host</td><td>Không trả phí theo token, dữ liệu không ra ngoài</td><td>Có sẵn</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 7b. Cấu hình hai máy -->
+<section class="slide">
+  <div class="eyebrow">02 · Chọn dịch vụ</div>
+  <h2>Hai máy, chi phí gần như bằng 0</h2>
+  <div class="body">
+    <div class="grid c2" style="align-items:start">
+      <div class="tbl" data-a style="--i:1;padding-top:16px">
+        <table>
+          <tr><th></th><th>VPS ICTU</th><th>GPU server</th></tr>
+          <tr><td>OS</td><td>Ubuntu 22.04</td><td>Ubuntu 26.04</td></tr>
+          <tr><td>CPU</td><td>16 vCPU</td><td>24 CPU</td></tr>
+          <tr><td>RAM</td><td>67 GiB</td><td>128 GiB</td></tr>
+          <tr><td>Disk</td><td>687 GB</td><td>256 GB + 2 TB</td></tr>
+          <tr><td>GPU</td><td>Không</td><td>RTX 5090 · 32 GB</td></tr>
+        </table>
+      </div>
+      <div style="display:grid;gap:18px">
+        <div class="card" data-a style="--i:2"><h3>Ưu điểm</h3><ul>
+          <li>Không dịch vụ nào cần thẻ thanh toán</li>
+          <li>Bảo mật nhiều lớp, GPU chỉ đi qua Tailscale</li>
+          <li>Mỗi dịch vụ một vai trò, dễ thay thế</li></ul></div>
+        <div class="card warn" data-a style="--i:3"><h3>Hạn chế</h3><ul>
+          <li>VPS chỉ một máy, chưa có dự phòng</li>
+          <li>Atlas M0: 512 MB, không backup tự động</li>
+          <li>GPU tắt thì chat và tạo ảnh không chạy</li></ul></div>
+      </div>
     </div>
   </div>
 </section>
 
 <!-- 4. Kiến trúc triển khai (động) -->
 <section class="slide">
-  <div class="eyebrow">02 · Deployment architecture</div>
+  <div class="eyebrow">03 · Deployment architecture</div>
   <h2>Chỉ có Cloudflare nhìn thấy Internet</h2>
   <div class="body" style="gap:14px">
     <svg class="arch" viewBox="0 0 1160 480" role="img" aria-label="Sơ đồ kiến trúc triển khai">
@@ -273,9 +363,103 @@
   </div>
 </section>
 
+<!-- 9. Quy trình deploy -->
+<section class="slide">
+  <div class="eyebrow">03 · Deployment</div>
+  <h2>Sáu bước từ máy trắng đến HTTPS</h2>
+  <div class="body">
+    <div class="grid c3">
+      <div class="card" data-a style="--i:1"><div class="n">1</div><h3>Chuẩn bị VPS</h3><p>SSH key, Git, Make, Nginx, Node 24, Podman.</p><code class="code">ssh-copy-id user@vps</code></div>
+      <div class="card" data-a style="--i:2"><div class="n">2</div><h3>Domain và DNS</h3><p>Trỏ nameserver về Cloudflare, thêm record A bật Proxied.</p><code class="code">dig +short chat.naot.me</code></div>
+      <div class="card" data-a style="--i:3"><div class="n">3</div><h3>MongoDB Atlas</h3><p>Cluster M0 Singapore, user riêng, lấy MONGO_URI.</p><code class="code">mongodb+srv://…</code></div>
+      <div class="card" data-a style="--i:4"><div class="n">4</div><h3>Tailscale</h3><p>Nối VPS với GPU server, gọi model qua IP riêng.</p><code class="code">sudo tailscale up</code></div>
+      <div class="card" data-a style="--i:5"><div class="n">5</div><h3>Deploy app</h3><p>Tạo .env, build container, check healthz, build web.</p><code class="code">make up &amp;&amp; make build-web</code></div>
+      <div class="card" data-a style="--i:6"><div class="n">6</div><h3>Nginx, UFW, HTTPS</h3><p>Reverse proxy cho /api, mở port 22 và 80, TLS do Cloudflare.</p><code class="code">make nginx-link</code></div>
+    </div>
+  </div>
+</section>
+
+<!-- 9a. Bước 1 -->
+<section class="slide">
+  <div class="eyebrow">03 · Deployment · Bước 1</div>
+  <h2>Chuẩn bị VPS</h2>
+  <div class="body" style="gap:16px">
+    <div class="grid c2 pics"><figure class="fg" data-a style="--i:1"><img class="shot" src="img/ssh-setup.jpg" alt="SSH key"><figcaption><b>SSH bằng key</b><span>Thêm public key vào <code>authorized_keys</code>, không dùng password</span></figcaption></figure>
+      <figure class="fg" data-a style="--i:2"><img class="shot" src="img/vps-console.jpg" alt="VPS Ubuntu"><figcaption><b>Đăng nhập VPS ICTU</b><span>Ubuntu 22.04 · 16 vCPU · 67 GiB RAM</span></figcaption></figure></div>
+    <p class="note" data-a="fade" style="--i:6">Cài Git, Make, Nginx, Node 24 và Podman bản mới (có <code>podman compose</code>)</p>
+  </div>
+</section>
+
+<!-- 9b. Bước 2 -->
+<section class="slide">
+  <div class="eyebrow">03 · Deployment · Bước 2</div>
+  <h2>Domain và DNS</h2>
+  <div class="body" style="gap:16px">
+    <div class="grid c2 pics"><figure class="fg" data-a style="--i:1"><img class="shot" src="img/namecheap-ns.jpg" alt="Namecheap"><figcaption><b>Namecheap → Custom DNS</b><span>Trỏ nameserver về Cloudflare</span></figcaption></figure>
+      <figure class="fg" data-a style="--i:2"><img class="shot" src="img/cloudflare-dns.jpg" alt="Cloudflare DNS"><figcaption><b>Cloudflare: record A</b><span><code>chat</code> → IP VPS, bật Proxied (ẩn IP thật)</span></figcaption></figure></div>
+    <p class="note" data-a="fade" style="--i:6">Cloudflare cấp TLS · Always Use HTTPS · SSL mode Flexible</p>
+  </div>
+</section>
+
+<!-- 9c. Bước 3-4 -->
+<section class="slide">
+  <div class="eyebrow">03 · Deployment · Bước 3–4</div>
+  <h2>Database và GPU server</h2>
+  <div class="body" style="gap:16px">
+    <div class="grid c2 pics"><figure class="fg" data-a style="--i:1"><img class="shot" src="img/atlas-console.jpg" alt="MongoDB Atlas"><figcaption><b>MongoDB Atlas</b><span>Cluster M0 (Free) Singapore, user riêng cho app</span></figcaption></figure>
+      <figure class="fg" data-a style="--i:2"><img class="shot" src="img/tailscale-ping.jpg" alt="Tailscale"><figcaption><b>Tailscale</b><span>VPS gọi GPU server qua private network, không mở port ra Internet</span></figcaption></figure></div>
+    <p class="note" data-a="fade" style="--i:6">Connection string đưa vào <code>MONGO_URI</code> · model gọi qua IP Tailscale</p>
+  </div>
+</section>
+
+<!-- 9d. Bước 5 -->
+<section class="slide">
+  <div class="eyebrow">03 · Deployment · Bước 5</div>
+  <h2>Deploy ứng dụng</h2>
+  <div class="body" style="gap:16px">
+    <div class="grid c3 pics"><figure class="fg" data-a style="--i:1"><img class="shot" src="img/github-repo.jpg" alt="GitHub"><figcaption><b>GitHub</b><span><code>git clone</code> về VPS</span></figcaption></figure>
+      <figure class="fg" data-a style="--i:2"><img class="shot" src="img/google-oauth.jpg" alt="Google OAuth"><figcaption><b>Google OAuth client</b><span>Redirect URI về <code>chat.naot.me</code></span></figcaption></figure>
+      <figure class="fg" data-a style="--i:3"><img class="shot" src="img/make-up.jpg" alt="make up"><figcaption><b><code>make up</code></b><span>Build và chạy container API</span></figcaption></figure></div>
+    <p class="note" data-a="fade" style="--i:6">Tạo <code>.env</code> từ <code>.env.example</code> · <code>make build-web</code> build giao diện, Nginx phục vụ trực tiếp</p>
+  </div>
+</section>
+
+<!-- 9e. Bước 6 -->
+<section class="slide">
+  <div class="eyebrow">03 · Deployment · Bước 6</div>
+  <h2>Nginx, UFW và HTTPS</h2>
+  <div class="body" style="flex-direction:row;align-items:center;gap:32px">
+    <div class="steps6" style="flex:1">
+      <div class="card" data-a style="--i:1"><h3>Nginx</h3><p>Phục vụ file tĩnh, proxy <code>/api/</code> về <code>127.0.0.1:9260</code></p></div>
+      <div class="card" data-a style="--i:2"><h3>UFW</h3><p>Chỉ mở port 22 và 80</p></div>
+      <div class="card" data-a style="--i:3"><h3>Cloudflare</h3><p>Cấp TLS, ẩn IP VPS, chống DDoS</p></div>
+    </div>
+    <figure class="fg" data-a="pop" style="flex:1.5;--i:2"><img class="shot" src="img/chatfrog-ui.jpg" alt="ChatFrog qua HTTPS"><figcaption><b>https://chat.naot.me</b><span>Hệ thống chạy thật qua HTTPS</span></figcaption></figure>
+  </div>
+</section>
+
+<!-- 3. Chức năng, input, output -->
+<section class="slide">
+  <div class="eyebrow">04 · Chức năng</div>
+  <h2>ChatFrog làm được gì?</h2>
+  <div class="body">
+    <div class="grid c4">
+      <div class="card" data-a style="--i:1"><div class="ico"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><h3>Chat</h3><p>Trả lời stream theo từng token (SSE).</p></div>
+      <div class="card" data-a style="--i:2"><div class="ico"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg></div><h3>Tạo &amp; edit ảnh</h3><p>Sinh và chỉnh ảnh PNG bằng Qwen Image.</p></div>
+      <div class="card" data-a style="--i:3"><div class="ico"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h8"/></svg></div><h3>Đọc tài liệu</h3><p>AI đọc file PDF, DOCX, TXT, CSV đính kèm.</p></div>
+      <div class="card" data-a style="--i:4"><div class="ico"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div><h3>Tài khoản</h3><p>Login Google, admin duyệt user.</p></div>
+    </div>
+    <div class="grid c2">
+      <div class="card" data-a style="--i:5"><h3>Cài đặt cá nhân</h3><ul><li>Custom instructions chỉnh phong cách trả lời</li><li>Giao diện sáng/tối</li></ul></div>
+      <div class="card" data-a style="--i:6"><h3>Quản trị</h3><ul><li>Duyệt, chặn, đổi quyền user</li><li>Stats và health của hệ thống</li></ul></div>
+    </div>
+  </div>
+  </div>
+</section>
+
 <!-- 5. Luồng một request chat (động) -->
 <section class="slide" id="s-flow">
-  <div class="eyebrow">02 · Business flow</div>
+  <div class="eyebrow">04 · Business flow</div>
   <h2>Một request chat đi qua những đâu?</h2>
   <div class="body" style="gap:18px">
     <div class="flow" id="steps">
@@ -295,104 +479,9 @@
   </div>
 </section>
 
-<!-- 6. Data model (động) -->
-<section class="slide">
-  <div class="eyebrow">02 · Data model</div>
-  <h2>Năm collection trên MongoDB Atlas</h2>
-  <div class="body" style="gap:14px">
-    <svg class="arch" viewBox="0 0 1136 400" role="img" aria-label="Sơ đồ collection">
-      <g class="nd" style="--i:0"><rect class="box" x="0" y="20" width="230" height="150" rx="14"/><text class="ttl" x="115" y="48" >User</text><line class="sep" x1="16" x2="214" y1="60" y2="60"/>
-        <text class="fld" x="24" y="84">id</text><text class="fld" x="24" y="104">email, name</text><text class="fld" x="24" y="124">role, status</text><text class="fld" x="24" y="144">settings</text></g>
-      <g class="nd" style="--i:2"><rect class="box" x="453" y="20" width="230" height="150" rx="14"/><text class="ttl" x="568" y="48">Conversation</text><line class="sep" x1="469" x2="667" y1="60" y2="60"/>
-        <text class="fld" x="477" y="84">id, user_id</text><text class="fld" x="477" y="104">title, pinned</text><text class="fld" x="477" y="124">updated_at</text></g>
-      <g class="nd" style="--i:4"><rect class="box" x="906" y="20" width="230" height="150" rx="14"/><text class="ttl" x="1021" y="48">Message</text><line class="sep" x1="922" x2="1120" y1="60" y2="60"/>
-        <text class="fld" x="930" y="84">id, conversation_id</text><text class="fld" x="930" y="104">role, status</text><text class="fld" x="930" y="124">parts[ ]</text><text class="fld" x="930" y="144">usage</text></g>
-      <g class="nd" style="--i:6"><rect class="box" x="0" y="250" width="230" height="130" rx="14"/><text class="ttl" x="115" y="278">Session</text><line class="sep" x1="16" x2="214" y1="290" y2="290"/>
-        <text class="fld" x="24" y="314">id, user_id</text><text class="fld" x="24" y="334">token_hash</text><text class="fld" x="24" y="354">expires_at</text></g>
-      <g class="nd" style="--i:7"><rect class="box cloud" x="906" y="250" width="230" height="130" rx="14"/><text class="ttl" x="1021" y="278">File</text><line class="sep" x1="922" x2="1120" y1="290" y2="290"/>
-        <text class="fld" x="930" y="314">id, user_id</text><text class="fld" x="930" y="334">kind, mime, size</text><text class="fld" x="930" y="354">storage_key</text></g>
-
-      <path class="ln draw" pathLength="1" d="M230 95H453" style="--i:1"/><text class="lbl" x="262" y="84" style="--i:1">1</text><text class="lbl" x="424" y="84" style="--i:1">*</text>
-      <path class="ln draw" pathLength="1" d="M683 95H906" style="--i:3"/><text class="lbl" x="715" y="84" style="--i:3">1</text><text class="lbl" x="877" y="84" style="--i:3">*</text>
-      <path class="ln draw" pathLength="1" d="M115 170V250" style="--i:5"/><text class="lbl" x="132" y="198" style="--i:5">1</text><text class="lbl" x="132" y="238" style="--i:5">*</text>
-      <path class="ln draw" pathLength="1" d="M1021 170V250" style="--i:8"/><text class="lbl" x="1038" y="198" style="--i:8">*</text><text class="lbl" x="1038" y="238" style="--i:8">*</text>
-      <text class="lbl" x="1008" y="218" style="--i:8;text-anchor:end">attach</text>
-
-      <path class="pk" data-n="1" data-speed=".3" d="M238 95H445"/>
-      <path class="pk" data-n="1" data-speed=".3" d="M691 95H898"/>
-    </svg>
-    <p class="note" data-a="fade" style="--i:10">Nội dung file nằm trên volume của VPS, DB chỉ giữ metadata · token của session được hash trước khi lưu</p>
-  </div>
-</section>
-
-<!-- 7. Dịch vụ cloud -->
-<section class="slide">
-  <div class="eyebrow">02 · Cloud services</div>
-  <h2>Mỗi thành phần một dịch vụ chuyên dụng</h2>
-  <div class="body">
-    <div class="tbl" data-a="fade" style="--i:0">
-      <table>
-        <tr><th>Dịch vụ</th><th>Loại</th><th>Vai trò</th><th>Chi phí</th></tr>
-        <tr data-a style="--i:1"><td>VPS ICTU</td><td class="tag">IaaS</td><td>Chạy Nginx, container API, lưu file</td><td>Có sẵn</td></tr>
-        <tr data-a style="--i:2"><td>Namecheap</td><td class="tag">Domain</td><td>Domain naot.me</td><td>Có sẵn</td></tr>
-        <tr data-a style="--i:3"><td>Cloudflare</td><td class="tag">DNSaaS</td><td>DNS, proxy ẩn IP, TLS, chống DDoS</td><td>Free</td></tr>
-        <tr data-a style="--i:4"><td>MongoDB Atlas</td><td class="tag">DBaaS</td><td>User, conversation, message</td><td>Free (M0)</td></tr>
-        <tr data-a style="--i:5"><td>Tailscale</td><td class="tag">NaaS</td><td>Private network VPS ↔ GPU server</td><td>Free</td></tr>
-        <tr data-a style="--i:6"><td>GitHub</td><td class="tag">SaaS</td><td>Source code, nguồn deploy</td><td>Free</td></tr>
-        <tr data-a style="--i:7"><td>GPU RTX 5090</td><td class="tag">Self-host</td><td>Qwen LLM và Qwen Image</td><td>Có sẵn</td></tr>
-      </table>
-    </div>
-  </div>
-</section>
-
-<!-- 8. Cấu hình và bảo mật -->
-<section class="slide">
-  <div class="eyebrow">02 · Configuration &amp; security</div>
-  <h2>Hai máy, nhiều lớp bảo vệ</h2>
-  <div class="body">
-    <div class="grid c2" style="align-items:start">
-      <div class="tbl" data-a style="--i:1;padding-top:16px">
-        <table>
-          <tr><th></th><th>VPS ICTU</th><th>GPU server</th></tr>
-          <tr><td>OS</td><td>Ubuntu 22.04</td><td>Ubuntu 26.04</td></tr>
-          <tr><td>CPU</td><td>16 vCPU</td><td>24 CPU</td></tr>
-          <tr><td>RAM</td><td>67 GiB</td><td>128 GiB</td></tr>
-          <tr><td>Disk</td><td>687 GB</td><td>256 GB + 2 TB</td></tr>
-          <tr><td>GPU</td><td>Không</td><td>RTX 5090 · 32 GB</td></tr>
-        </table>
-      </div>
-      <div class="card" data-a style="--i:2"><h3>Security</h3>
-        <ul>
-          <li data-a style="--i:3">Cloudflare ẩn IP và tự cấp TLS</li>
-          <li data-a style="--i:4">Container API chỉ listen <code>127.0.0.1</code>, đi qua Nginx</li>
-          <li data-a style="--i:5">UFW chỉ mở port 22 và 80</li>
-          <li data-a style="--i:6">SSH bằng key, không dùng password</li>
-          <li data-a style="--i:7">Rate limit 10 request/phút cho login</li>
-          <li data-a style="--i:8">Atlas: user riêng, quyền giới hạn, kết nối TLS</li>
-        </ul></div>
-    </div>
-  </div>
-</section>
-
-<!-- 9. Quy trình deploy -->
-<section class="slide">
-  <div class="eyebrow">02 · Deployment</div>
-  <h2>Sáu bước từ máy trắng đến HTTPS</h2>
-  <div class="body">
-    <div class="grid c3">
-      <div class="card" data-a style="--i:1"><div class="n">1</div><h3>Chuẩn bị VPS</h3><p>SSH key, Git, Make, Nginx, Node 24, Podman.</p><code class="code">ssh-copy-id user@vps</code></div>
-      <div class="card" data-a style="--i:2"><div class="n">2</div><h3>Domain và DNS</h3><p>Trỏ nameserver về Cloudflare, thêm record A bật Proxied.</p><code class="code">dig +short chat.naot.me</code></div>
-      <div class="card" data-a style="--i:3"><div class="n">3</div><h3>MongoDB Atlas</h3><p>Cluster M0 Singapore, user riêng, lấy MONGO_URI.</p><code class="code">mongodb+srv://…</code></div>
-      <div class="card" data-a style="--i:4"><div class="n">4</div><h3>Tailscale</h3><p>Nối VPS với GPU server, gọi model qua IP riêng.</p><code class="code">sudo tailscale up</code></div>
-      <div class="card" data-a style="--i:5"><div class="n">5</div><h3>Deploy app</h3><p>Tạo .env, build container, check healthz, build web.</p><code class="code">make up &amp;&amp; make build-web</code></div>
-      <div class="card" data-a style="--i:6"><div class="n">6</div><h3>Nginx, UFW, HTTPS</h3><p>Reverse proxy cho /api, mở port 22 và 80, TLS do Cloudflare.</p><code class="code">make nginx-link</code></div>
-    </div>
-  </div>
-</section>
-
 <!-- 10. Kết quả (thư viện ảnh động) -->
 <section class="slide" id="s-gal">
-  <div class="eyebrow">03 · Kết quả đạt được</div>
+  <div class="eyebrow">04 · Kết quả đạt được</div>
   <h2>Hệ thống chạy thật tại chat.naot.me</h2>
   <div class="body" style="flex-direction:row;align-items:center;gap:32px">
     <div style="flex:1.45;--i:1" data-a="pop">
@@ -411,18 +500,41 @@
         <li>Login Google, admin duyệt user</li>
         <li>Chat stream, tạo và edit ảnh, đọc tài liệu</li>
         <li>Lưu conversation trên MongoDB Atlas</li>
-        <li>Admin: stats, health và switch bật/tắt từng model</li>
+        <li>Admin: duyệt user, stats và health</li>
       </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 10b. Kiểm thử -->
+<section class="slide">
+  <div class="eyebrow">04 · Kiểm thử</div>
+  <h2>Kiểm thử tự động và thủ công</h2>
+  <div class="body" style="gap:16px">
+    <div class="grid c2">
+      <div class="card tight" data-a style="--i:1"><h3>Tự động</h3><p><code>make test</code>: Go test và Vitest</p></div>
+      <div class="card tight" data-a style="--i:2"><h3>End-to-end</h3><p><code>make test-api-e2e</code>: Atlas và model thật, DB tạm</p></div>
+    </div>
+    <div class="tbl" data-a="fade" style="--i:3">
+      <table class="kt">
+        <tr><th>#</th><th>Kịch bản thủ công</th><th>Kết quả mong đợi</th></tr>
+        <tr data-a style="--i:4"><td>1</td><td>Login bằng email mới</td><td>Trang chờ duyệt, gọi API khác trả 403</td></tr>
+        <tr data-a style="--i:5"><td>2</td><td>Gửi message, tạo rồi sửa ảnh</td><td>Stream dần, ảnh PNG hiện trong conversation</td></tr>
+        <tr data-a style="--i:6"><td>3</td><td>Upload file quá 20 MB hoặc sai định dạng</td><td>Lỗi 413 / 415, không lưu file</td></tr>
+        <tr data-a style="--i:7"><td>4</td><td>Gửi message khi câu trả lời trước chưa xong</td><td>Lỗi 409</td></tr>
+        <tr data-a style="--i:8"><td>5</td><td>GPU server tắt hoặc mất Tailscale</td><td>Báo <code>model_unavailable</code>, gửi lại được</td></tr>
+        <tr data-a style="--i:9"><td>6</td><td>Login liên tục, truy cập <code>http://</code></td><td>Nginx trả 429, Cloudflare chuyển sang HTTPS</td></tr>
+      </table>
     </div>
   </div>
 </section>
 
 <!-- 11. Kết luận -->
 <section class="slide">
-  <div class="eyebrow">04 · Kết luận &amp; hướng phát triển</div>
+  <div class="eyebrow">05 · Kết luận &amp; hướng phát triển</div>
   <h2>Chạy ổn định, sẵn sàng mở rộng</h2>
   <div class="body">
-    <div class="grid c3">
+    <div class="grid c3 big">
       <div class="card" data-a style="--i:1"><h3>Kết quả</h3><ul>
         <li>Chạy thật tại chat.naot.me qua HTTPS</li>
         <li>Kết hợp 6 dịch vụ cloud, chi phí gần như 0 đồng</li>
@@ -457,7 +569,7 @@
         <li>Console: Cloudflare, Atlas, <code>tailscale status</code></li></ul></div>
       <div data-a style="--i:3"><h3>Phân công</h3>
         <p><b class="hl">Hoàng Đức Toàn · 50%</b><br>Nhóm trưởng, Frontend, Backend, DevOps</p>
-        <p style="margin-top:10px"><b class="hl">Hoàng Ngọc Tú · 50%</b><br>Phân tích, báo cáo, kiểm thử, slide</p></div>
+        <p style="margin-top:10px"><b class="hl">Hoàng Ngọc Tú · 50%</b><br>Phân tích, báo cáo, kiểm thử</p></div>
       <p data-a style="--i:5;color:var(--accent);font-size:22px;font-weight:750;letter-spacing:-.01em;margin-top:auto">Cảm ơn thầy và các bạn đã lắng nghe!</p>
     </div>
   </div>
@@ -562,7 +674,7 @@
     }
     set(0);
     if (reduce) return;
-    var a = setInterval(function () { set(n + 1); }, 3600);
+    var a = setInterval(function () { set(n + 1); }, 2400);
     timers.push(function () { clearInterval(a); });
   }
 
